@@ -1,4 +1,7 @@
-const API_URL = "http://localhost:8000";
+// Use relative path for production, localhost for local development if needed
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? (window.location.port ? window.location.origin : 'http://localhost:8000') 
+    : window.location.origin;
 let sessionId = "user_" + Math.floor(Math.random() * 10000); // Simple anonymous session
 
 // Speech APIs
