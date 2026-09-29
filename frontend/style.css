@@ -182,6 +182,7 @@ body:not(.dark-theme) .theme-toggle-btn .sun-icon { display: none; }
 .chat-history {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -461,6 +462,7 @@ body:not(.dark-theme) .theme-toggle-btn .sun-icon { display: none; }
 .plan-display-container {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding-right: 0.5rem;
 }
 
@@ -587,4 +589,156 @@ body.dark-theme .theme-toggle-btn:hover {
 }
 body.dark-theme .ready-indicator {
     color: #000000;
+}
+
+/* --- Mobile Responsiveness --- */
+/* Desktop defaults */
+.sheet-close-btn, .sheet-backdrop, .mobile-action-bar {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    body {
+        overflow: hidden; /* Prevent body scroll on mobile */
+    }
+    
+    .container {
+        padding: 0;
+    }
+    
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        padding: 0 1rem;
+        height: 100vh; /* Fallback for older browsers */
+        height: 100dvh;
+    }
+
+    .or-type, .hint-box {
+        display: none !important;
+    }
+
+    .avatar-stage {
+        width: 100%;
+        max-width: 320px;
+        height: auto;
+        flex: 1;
+        min-height: 40vh;
+        margin-bottom: 0.5rem;
+    }
+    
+    .main-header {
+        padding: 1rem 1rem 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .main-header h1 {
+        font-size: 40px;
+    }
+    
+    .theme-toggle-btn {
+        width: 38px;
+        height: 38px;
+        right: -45px;
+    }
+    
+    .coach-container {
+        padding-bottom: 8rem; /* space for bottom action bar */
+    }
+
+    /* Bottom Action Bar */
+    .mobile-action-bar {
+        display: flex;
+        gap: 1rem;
+        position: fixed;
+        bottom: calc(env(safe-area-inset-bottom, 1rem) + 1.5rem);
+        left: 1rem;
+        right: 1rem;
+        z-index: 50;
+    }
+    
+    .mobile-action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        color: var(--text-primary);
+        font-family: var(--font-main);
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    
+    body.dark-theme .mobile-action-btn {
+        background: rgba(30, 40, 35, 0.85);
+        color: #ffffff;
+    }
+
+    /* Backdrop */
+    .sheet-backdrop {
+        display: block;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Bottom Sheets */
+    .chat-card, .plan-card {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 85vh; /* Fallback for older browsers */
+        height: 85dvh;
+        z-index: 101;
+        border-radius: 24px 24px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        margin: 0;
+        padding: 4rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .chat-card.open, .plan-card.open {
+        transform: translateY(0);
+    }
+    
+    /* Close Button */
+    .sheet-close-btn {
+        display: flex;
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        background: rgba(255, 255, 255, 0.4);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-primary);
+        cursor: pointer;
+        z-index: 102;
+    }
+    
+    body.dark-theme .sheet-close-btn {
+        background: rgba(30, 40, 35, 0.6);
+        color: #ffffff;
+    }
 }

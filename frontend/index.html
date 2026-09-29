@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FitBuddy: AI Voice Fitness Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,9 +21,15 @@
     </header>
 
     <main class="container">
+        <!-- Backdrop for mobile bottom sheets -->
+        <div class="sheet-backdrop" id="sheet-backdrop"></div>
+        
         <div class="dashboard-grid">
             <!-- Left: Chat History -->
-            <section class="card chat-card">
+            <section class="card chat-card" id="chat-sheet">
+                <button class="sheet-close-btn" id="btn-close-chat" aria-label="Close Chat">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
                 <div class="card-header">
                     <h2>Let's build your routine</h2>
                     <span class="live-indicator"><span class="dot"></span> Live coach</span>
@@ -78,7 +84,10 @@
             </section>
 
             <!-- Right: Your Plan -->
-            <section class="card plan-card">
+            <section class="card plan-card" id="plan-sheet">
+                <button class="sheet-close-btn" id="btn-close-plan" aria-label="Close Plan">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
                 <div class="card-header">
                     <h2>Your workout</h2>
                     <span class="live-indicator"><span class="dot"></span> Equipment-Aware</span>
@@ -90,6 +99,18 @@
                     </p>
                 </div>
             </section>
+        </div>
+
+        <!-- Mobile Action Bar -->
+        <div class="mobile-action-bar" id="mobile-action-bar">
+            <button class="mobile-action-btn" id="btn-open-chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                Chat
+            </button>
+            <button class="mobile-action-btn" id="btn-open-plan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"></path><path d="M3 22h18"></path><path d="M14 22a7 7 0 1 0 0-14h-1"></path><path d="M9 14h2"></path><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path><path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path></svg>
+                Workout Plan
+            </button>
         </div>
     </main>
     <script type="module" src="avatar.js"></script>

@@ -373,10 +373,45 @@ window.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('fitbuddy-theme', isDark ? 'dark' : 'light');
         });
         
-        // Check saved preference or OS preference on load
-        if (localStorage.getItem('fitbuddy-theme') === 'dark' || 
-            (!localStorage.getItem('fitbuddy-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        // Check saved preference on load (defaults to light mode)
+        if (localStorage.getItem('fitbuddy-theme') === 'dark') {
             document.body.classList.add('dark-theme');
         }
     }
+    
+    // --- Mobile Bottom Sheets Logic ---
+    const btnOpenChat = document.getElementById('btn-open-chat');
+    const btnOpenPlan = document.getElementById('btn-open-plan');
+    const btnCloseChat = document.getElementById('btn-close-chat');
+    const btnClosePlan = document.getElementById('btn-close-plan');
+    const chatSheet = document.getElementById('chat-sheet');
+    const planSheet = document.getElementById('plan-sheet');
+    const sheetBackdrop = document.getElementById('sheet-backdrop');
+    
+    function closeAllSheets() {
+        if (chatSheet) chatSheet.classList.remove('open');
+        if (planSheet) planSheet.classList.remove('open');
+        if (sheetBackdrop) sheetBackdrop.classList.remove('active');
+        // Restore focus to opening button could be added here
+    }
+    
+    if (btnOpenChat) {
+        btnOpenChat.addEventListener('click', () => {
+            closeAllSheets();
+            chatSheet.classList.add('open');
+            sheetBackdrop.classList.add('active');
+        });
+    }
+    
+    if (btnOpenPlan) {
+        btnOpenPlan.addEventListener('click', () => {
+            closeAllSheets();
+            planSheet.classList.add('open');
+            sheetBackdrop.classList.add('active');
+        });
+    }
+    
+    if (btnCloseChat) btnCloseChat.addEventListener('click', closeAllSheets);
+    if (btnClosePlan) btnClosePlan.addEventListener('click', closeAllSheets);
+    if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeAllSheets);
 });
