@@ -10,6 +10,17 @@ const synthesis = window.speechSynthesis;
 let recognition = null;
 let isListening = false;
 
+// Speech Synthesis mobile unlock
+let speechUnlocked = false;
+function unlockSpeech() {
+    if (!speechUnlocked && synthesis) {
+        const u = new SpeechSynthesisUtterance("");
+        u.volume = 0;
+        synthesis.speak(u);
+        speechUnlocked = true;
+    }
+}
+
 // UI Elements
 const coachArea = document.getElementById("coach-area");
 const coachStatus = document.getElementById("coach-status");
@@ -234,6 +245,7 @@ function speakText(text) {
 
 // Event Listeners
 btnMic.addEventListener("click", () => {
+    unlockSpeech();
     if (recognition && !isListening) {
         synthesis.cancel();
         try {
@@ -244,7 +256,14 @@ btnMic.addEventListener("click", () => {
     }
 });
 
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        btnSend.click();
+    }
+});
+
 btnSend.addEventListener("click", async () => {
+    unlockSpeech();
     const text = chatInput.value.trim();
     if (!text) return;
     
