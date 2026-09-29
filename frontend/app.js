@@ -21,6 +21,14 @@ function unlockSpeech() {
     }
 }
 
+function updateMicIcon(state) {
+    if (state === "stop") {
+        btnMic.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>`;
+    } else {
+        btnMic.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+    }
+}
+
 // UI Elements
 const coachArea = document.getElementById("coach-area");
 const coachStatus = document.getElementById("coach-status");
@@ -42,10 +50,11 @@ if (SpeechRecognition) {
 
     recognition.onstart = () => {
         isListening = true;
+        updateMicIcon("stop");
         finalTranscript = ''; // Clear previous finalized text
         setAvatarState("listening");
         coachStatus.textContent = "Listening...";
-        btnMic.style.opacity = "0.5";
+        btnMic.style.opacity = "1";
         chatInput.value = "";
     };
 
@@ -166,6 +175,7 @@ function setAvatarState(state) {
 
 function resetChatControls() {
     btnMic.style.opacity = "1";
+    updateMicIcon("mic");
     chatInput.value = "";
     if (!synthesis.speaking) {
         setAvatarState("idle");
@@ -220,6 +230,7 @@ function speakText(text) {
     utterance.onstart = () => {
         setAvatarState("speaking");
         coachStatus.textContent = "Speaking...";
+        updateMicIcon("stop");
     };
     
     // Trigger the avatar's word pulse precisely when each word is spoken!
@@ -232,12 +243,15 @@ function speakText(text) {
     utterance.onend = () => {
         setAvatarState("idle");
         coachStatus.textContent = "Ready";
+        updateMicIcon("mic");
     };
     
-    utterance.onerror = () => {
-        setAvatarState("error");
-        coachStatus.textContent = "Speech playback error";
-        setTimeout(() => setAvatarState("idle"), 2000);
+    utterance.onerror = (event) => {
+        // If it was canceled by the user, or if iOS silently drops it, 
+        // just quietly reset to ready instead of showing an error.
+        setAvatarState("idle");
+        coachStatus.textContent = "Ready";
+        updateMicIcon("mic");
     };
 
     synthesis.speak(utterance);
@@ -245,7 +259,22 @@ function speakText(text) {
 
 // Event Listeners
 btnMic.addEventListener("click", () => {
+    const wasSpeaking = synthesis.speaking;
     unlockSpeech();
+    
+    if (isListening) {
+        recognition.stop();
+        return;
+    }
+    
+    if (wasSpeaking) {
+        synthesis.cancel();
+        setAvatarState("idle");
+        coachStatus.textContent = "Ready";
+        updateMicIcon("mic");
+        return;
+    }
+    
     if (recognition && !isListening) {
         synthesis.cancel();
         try {

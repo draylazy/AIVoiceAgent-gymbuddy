@@ -208,7 +208,7 @@ def _generate_groq_plan(user: Any, equipment: Any, eligible_exercises: List[Dict
             }}
           ],
           "cooldown": ["Targeted static stretches"],
-          "estimated_time_minutes": 30,
+          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
           "explanation": "Scientific rationale for this session"
         }}
       ],
@@ -273,7 +273,7 @@ def _generate_gemini_plan(user: Any, equipment: Any, eligible_exercises: List[Di
             }}
           ],
           "cooldown": ["string"],
-          "estimated_time_minutes": 30,
+          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
           "explanation": "brief reason for this session"
         }}
       ],
@@ -423,7 +423,7 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) ->
             }}
           ],
           "cooldown": ["Static stretches (2 mins)"],
-          "estimated_time_minutes": 30,
+          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
           "explanation": "Targeted focus and rationale for this session"
         }}
       ],
@@ -483,7 +483,7 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) 
             }}
           ],
           "cooldown": ["string"],
-          "estimated_time_minutes": 30,
+          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
           "explanation": "Targeted focus for this session"
         }}
       ],
@@ -520,6 +520,7 @@ Your personality:
 - You respond DIRECTLY to exactly what the user just said — never give generic filler.
 - You have a great memory: you track everything from the conversation (equipment mentioned, muscle groups, goals, level).
 - You give SPECIFIC, actionable advice — not vague platitudes.
+- You are STRICTLY a fitness coach. You MUST ONLY answer questions related to fitness, workouts, exercises, nutrition, recovery, and gym equipment. If the user asks about anything else (e.g., programming, politics, history, general knowledge), politely decline and steer the conversation back to fitness.
 
 Voice rules (replies will be read aloud via text-to-speech):
 - Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
@@ -589,6 +590,9 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
     You are speaking with the user through voice synthesis (text-to-speech).
     Keep your replies concise, natural, and direct (1 to 3 sentences max) so they sound great when read aloud.
     Directly address and answer what the user asked or said.
+    
+    CRITICAL DOMAIN RESTRICTION:
+    You are STRICTLY a fitness coach. You MUST ONLY answer questions related to fitness, workouts, exercises, nutrition, recovery, and gym equipment. If the user asks about anything else (e.g., programming, politics, history, general knowledge), politely decline and steer the conversation back to fitness.
     
     Conversation history:
     {history_str}
