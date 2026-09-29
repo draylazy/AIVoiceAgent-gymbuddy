@@ -593,7 +593,15 @@ body.dark-theme .ready-indicator {
 
 /* --- Mobile Responsiveness --- */
 /* Desktop defaults */
-.sheet-close-btn, .sheet-backdrop, .mobile-action-bar {
+.sheet-close-btn, .sheet-backdrop {
+    display: none;
+}
+.mobile-action-bar {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+#btn-open-chat, #btn-open-plan {
     display: none;
 }
 
@@ -621,9 +629,17 @@ body.dark-theme .ready-indicator {
     .avatar-stage {
         width: 100%;
         max-width: 320px;
-        height: auto;
-        flex: 1;
-        min-height: 40vh;
+        height: 50vh; /* Give it a solid chunk of the screen */
+        flex: none;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    
+    .ready-indicator {
+        margin-bottom: 0.5rem; /* Tighter spacing for phone screens */
+    }
+    
+    .audio-visualizer {
         margin-bottom: 0.5rem;
     }
     
@@ -643,44 +659,82 @@ body.dark-theme .ready-indicator {
     }
     
     .coach-container {
-        padding-bottom: 8rem; /* space for bottom action bar */
-    }
-
-    /* Bottom Action Bar */
-    .mobile-action-bar {
-        display: flex;
-        gap: 1rem;
-        position: fixed;
-        bottom: calc(env(safe-area-inset-bottom, 1rem) + 1.5rem);
-        left: 1rem;
-        right: 1rem;
-        z-index: 50;
+        padding-bottom: 0;
     }
     
-    .mobile-action-btn {
-        flex: 1;
+    .coach-area {
+        margin-bottom: 6rem; /* Ensure space for the floating dock */
+    }
+
+    /* Bottom Action Bar (Dock) */
+    .mobile-action-bar {
         display: flex;
+        justify-content: space-around;
         align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 1rem;
+        position: fixed;
+        bottom: calc(env(safe-area-inset-bottom, 1rem) + 1.5rem);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 360px;
+        z-index: 50;
         background: var(--bg-card);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid var(--glass-border);
-        border-radius: 20px;
+        border-radius: 40px;
+        padding: 0.5rem 1rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    }
+    
+    #btn-open-chat, #btn-open-plan {
+        display: flex;
+    }
+    
+    .mobile-action-btn {
+        background: transparent;
+        border: none;
         color: var(--text-primary);
-        font-family: var(--font-main);
-        font-size: 16px;
-        font-weight: 600;
+        padding: 0.5rem;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        transition: transform 0.2s, background-color 0.2s;
+        font-size: 0; /* Hide text on mobile */
+    }
+    
+    .mobile-action-btn svg {
+        width: 28px;
+        height: 28px;
+    }
+    
+    body.dark-theme .mobile-action-bar {
+        background: rgba(30, 40, 35, 0.85);
     }
     
     body.dark-theme .mobile-action-btn {
-        background: rgba(30, 40, 35, 0.85);
         color: #ffffff;
+    }
+    
+    .mobile-action-bar .push-to-talk {
+        background: var(--accent-dark-green);
+        color: #fff;
+        border-radius: 50%;
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 0;
+        margin: 0 -0.5rem; /* pull slightly out of flow to make it look prominent */
+    }
+    
+    .mobile-action-bar .push-to-talk span {
+        display: none; /* Hide text */
+    }
+    
+    .mobile-action-bar .push-to-talk svg {
+        width: 26px;
+        height: 26px;
     }
 
     /* Backdrop */
