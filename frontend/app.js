@@ -520,4 +520,28 @@ window.addEventListener('DOMContentLoaded', () => {
     if (btnCloseChat) btnCloseChat.addEventListener('click', closeAllSheets);
     if (btnClosePlan) btnClosePlan.addEventListener('click', closeAllSheets);
     if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeAllSheets);
+
+    // Single Page App (SPA) logic to prevent WebGL/3D reload lag
+    document.querySelectorAll('.nav-bar a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = e.currentTarget.getAttribute('href');
+            if (e.currentTarget.classList.contains('active')) return;
+            
+            document.querySelectorAll('.nav-bar a').forEach(a => a.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            if (target === 'mealbuddy.html') {
+                document.body.classList.add('mealbuddy-page');
+                const logo = document.querySelector('.logo h1');
+                if (logo) logo.textContent = "MealBuddy";
+                if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
+            } else {
+                document.body.classList.remove('mealbuddy-page');
+                const logo = document.querySelector('.logo h1');
+                if (logo) logo.textContent = "FitBuddy";
+                if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
+            }
+        });
+    });
 });
