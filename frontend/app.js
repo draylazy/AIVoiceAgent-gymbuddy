@@ -362,7 +362,7 @@ btnSend.addEventListener("click", async () => {
             const data = await response.json();
             const coachText = data.response || "Here is your plan!";
             addChatMessage("coach", coachText);
-            speakText(coachText);
+            playAudio(coachText, data.audio_url);
             
             // If the AI generated a plan, display it
             if (data.plan_data) {
