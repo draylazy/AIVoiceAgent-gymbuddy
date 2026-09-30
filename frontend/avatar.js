@@ -134,10 +134,17 @@ try {
         talkPulse = 1.0;
     }
     
-    window.bullAvatar = { react, wordPulse }; 
-
-    function coordinates(e) { const r = canvas.getBoundingClientRect(); pointer.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); }
-    canvas.addEventListener('pointermove', e => { coordinates(e); lookX = pointer.x * .3; lookY = -pointer.y * .13; });
+    function setMode(mode) {
+        if (mode === 'nutrition') {
+            shirt.color.set('#ffffff'); // White Chef's Jacket
+            trim.color.set('#e0e0e0');
+        } else {
+            shirt.color.set('#394743'); // Default Green Gym Shirt
+            trim.color.set('#26332e');
+        }
+    }
+    
+    window.bullAvatar = { react, wordPulse, setMode };
     canvas.addEventListener('pointerleave', () => { lookX = 0; lookY = 0; });
     let down = null; canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; }); canvas.addEventListener('pointercancel', () => down = null);
     canvas.addEventListener('pointerup', e => { if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) { down = null; return; } down = null; coordinates(e); ray.setFromCamera(pointer, camera); const hit = ray.intersectObject(bull, true)[0]; if (hit) react('random'); });
