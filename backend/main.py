@@ -1,11 +1,13 @@
 import os
 import json
+import urllib.parse
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from . import models, schemas, crud, ai_service, seed_data
+from . import models, schemas, crud, ai_service, tts_service, seed_data
 from .database import engine, get_db
 
 # Create DB tables
@@ -94,13 +96,27 @@ def chat(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     
     # Pass entire history to AI
     response_data = ai_service.generate_conversational_response(chat_sessions[session_id])
+    response_text = response_data["text"]
     
-    chat_sessions[session_id].append({"role": "assistant", "content": response_data["text"]})
+    chat_sessions[session_id].append({"role": "assistant", "content": response_text})
+    
+    audio_url = f"/tts?text={urllib.parse.quote(response_text)}"
     
     return schemas.ChatResponse(
-        response=response_data["text"],
+        response=response_text,
+        audio_url=audio_url,
         plan_data=response_data.get("plan_data")
     )
+
+@app.get("/tts")
+async def get_tts(text: str, voice: str = None, pitch: str = None):
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="Text parameter is required")
+    return StreamingResponse(
+        tts_service.generate_speech_stream(text=text, voice=voice, pitch=pitch),
+        media_type="audio/mpeg"
+    )
+
 
 # Ensure frontend directory exists before mounting
 os.makedirs("frontend", exist_ok=True)

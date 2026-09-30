@@ -8,3 +8,5 @@ pytest
 httpx
 groq
 ddgs
+edge-tts
+

@@ -162,7 +162,8 @@ function resetChatControls() {
     btnMic.style.opacity = "1";
     updateMicIcon("mic");
     chatInput.value = "";
-    if (!synthesis.speaking) {
+    const isSpeaking = (currentAudio && !currentAudio.paused) || (synthesis && synthesis.speaking);
+    if (!isSpeaking) {
         setAvatarState("idle");
         coachStatus.textContent = "Ready";
     }
@@ -184,24 +185,79 @@ function loadVoices() {
     
     // Attempt to find a suitable high-quality male voice
     preferredVoice = 
+        voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.includes('Google US English Male')) ||
         voices.find(v => v.name.includes('Microsoft Mark')) ||
-        voices.find(v => v.name.includes('Microsoft David')) ||
-        // iOS High Quality Voices (Arthur, Aaron, Nicky, Daniel)
-        voices.find(v => v.name.includes('Aaron')) ||
-        voices.find(v => v.name.includes('Arthur')) ||
-        voices.find(v => v.name.includes('Daniel') && v.name.includes('Enhanced')) ||
         voices.find(v => v.name.toLowerCase().includes('male') && v.lang.includes('en-US')) ||
         voices.find(v => v.lang === 'en-US' && !v.name.includes('Fred')) || // Avoid 'Fred' (very robotic)
         voices.find(v => v.lang === 'en-US') ||
         voices[0];
 }
 
-// Voices load asynchronously in some browsers
-if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = loadVoices;
+let currentAudio = null;
+let edgeTtsPulseInterval = null;
+
+function stopAudioPlayback() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+    }
+    if (edgeTtsPulseInterval) {
+        clearInterval(edgeTtsPulseInterval);
+        edgeTtsPulseInterval = null;
+    }
+    if (synthesis && synthesis.speaking) {
+        synthesis.cancel();
+    }
 }
-loadVoices();
+
+function playAudio(text, audioUrl) {
+    stopAudioPlayback();
+
+    if (audioUrl) {
+        const fullAudioUrl = audioUrl.startsWith('http') ? audioUrl : `${API_URL}${audioUrl}`;
+        currentAudio = new Audio(fullAudioUrl);
+
+        currentAudio.onplay = () => {
+            setAvatarState("speaking");
+            coachStatus.textContent = "Speaking...";
+            updateMicIcon("stop");
+
+            // Rhythmic avatar lip-sync pulse while playing Edge TTS audio
+            edgeTtsPulseInterval = setInterval(() => {
+                if (window.bullAvatar && window.bullAvatar.wordPulse) {
+                    window.bullAvatar.wordPulse();
+                }
+            }, 180);
+        };
+
+        currentAudio.onended = () => {
+            if (edgeTtsPulseInterval) {
+                clearInterval(edgeTtsPulseInterval);
+                edgeTtsPulseInterval = null;
+            }
+            setAvatarState("idle");
+            coachStatus.textContent = "Ready";
+            updateMicIcon("mic");
+            currentAudio = null;
+        };
+
+        currentAudio.onerror = (err) => {
+            console.warn("Edge TTS audio playback failed, falling back to Web Speech API:", err);
+            stopAudioPlayback();
+            speakText(text);
+        };
+
+        currentAudio.play().catch(err => {
+            console.warn("Edge TTS playback blocked or error, falling back to Web Speech API:", err);
+            stopAudioPlayback();
+            speakText(text);
+        });
+    } else {
+        speakText(text);
+    }
+}
 
 function speakText(text) {
     if (!synthesis) return;
@@ -250,7 +306,7 @@ function speakText(text) {
 
 // Event Listeners
 btnMic.addEventListener("click", () => {
-    const wasSpeaking = synthesis.speaking;
+    const wasSpeaking = (currentAudio && !currentAudio.paused) || (synthesis && synthesis.speaking);
     unlockSpeech();
     
     if (isListening) {
@@ -259,7 +315,7 @@ btnMic.addEventListener("click", () => {
     }
     
     if (wasSpeaking) {
-        synthesis.cancel();
+        stopAudioPlayback();
         setAvatarState("idle");
         coachStatus.textContent = "Ready";
         updateMicIcon("mic");
@@ -267,7 +323,7 @@ btnMic.addEventListener("click", () => {
     }
     
     if (recognition && !isListening) {
-        synthesis.cancel();
+        stopAudioPlayback();
         try {
             recognition.start();
         } catch(e) {
