@@ -564,6 +564,9 @@ Never say "I heard you say..." — respond naturally as a coach would."""
     
     if "[GENERATE_PLAN]" in text or user_wants_plan:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
+        if not clean_text:
+            clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
+            
         try:
             plan = _generate_groq_dynamic_plan_from_chat(chat_history)
             return {"text": clean_text, "plan_data": plan}
@@ -620,6 +623,9 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
     
     if "[GENERATE_PLAN]" in text or user_wants_plan:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
+        if not clean_text:
+            clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
+            
         try:
             plan = _generate_gemini_dynamic_plan_from_chat(chat_history)
             return {"text": clean_text, "plan_data": plan}
