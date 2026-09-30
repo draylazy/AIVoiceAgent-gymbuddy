@@ -51,6 +51,7 @@ if (SpeechRecognition) {
     recognition.onstart = () => {
         isListening = true;
         updateMicIcon("stop");
+        btnMic.classList.add("mic-active");
         finalTranscript = ''; // Clear previous finalized text
         setAvatarState("listening");
         coachStatus.textContent = "Listening...";
@@ -87,6 +88,7 @@ if (SpeechRecognition) {
         console.error("Speech recognition error", event.error);
         setAvatarState("error");
         coachStatus.textContent = "Microphone error";
+        btnMic.classList.remove("mic-active");
         setTimeout(() => setAvatarState("idle"), 2000);
         clearTimeout(silenceTimer);
         resetChatControls();
@@ -94,6 +96,7 @@ if (SpeechRecognition) {
 
     recognition.onend = () => {
         isListening = false;
+        btnMic.classList.remove("mic-active");
         clearTimeout(silenceTimer);
         
         if (chatInput.value.trim() !== "") {
@@ -109,7 +112,7 @@ if (SpeechRecognition) {
     btnMic.textContent = "Microphone not supported";
 }
 
-let amplitudeInterval = null;
+// We don't need amplitude interval anymore since audio visualizer is removed.
 
 let idleTimeout = null;
 
@@ -152,24 +155,6 @@ function setAvatarState(state) {
         resetIdleTimer();
     } else {
         clearTimeout(idleTimeout);
-    }
-    
-    // We handle the visualizer animation via CSS classes (.state-speaking) now, 
-    // so we don't strictly need the JS interval for fake amplitude anymore, 
-    // but leaving it in case future JS logic relies on it.
-    if (state === "speaking") {
-        if (!amplitudeInterval) {
-            amplitudeInterval = setInterval(() => {
-                const fakeAmplitude = Math.random() * 0.15; // random value between 0 and 0.15
-                coachArea.style.setProperty('--audio-amplitude', fakeAmplitude);
-            }, 100);
-        }
-    } else {
-        if (amplitudeInterval) {
-            clearInterval(amplitudeInterval);
-            amplitudeInterval = null;
-        }
-        coachArea.style.setProperty('--audio-amplitude', 0);
     }
 }
 
@@ -375,8 +360,9 @@ btnSend.addEventListener("click", async () => {
         
         if (response.ok) {
             const data = await response.json();
-            addChatMessage("coach", data.response);
-            playAudio(data.response, data.audio_url);
+            const coachText = data.response || "Here is your plan!";
+            addChatMessage("coach", coachText);
+            speakText(coachText);
             
             // If the AI generated a plan, display it
             if (data.plan_data) {
