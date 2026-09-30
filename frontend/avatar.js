@@ -1,6 +1,7 @@
 const stage = document.querySelector('#stage');
 const status = document.querySelector('#coach-status') || document.querySelector('#status');
 
+import { createRhino } from './rhino.js';
 try {
     const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(33, 1, .1, 100);
@@ -108,14 +109,22 @@ try {
 
     function react(type) { 
         if (type === 'random') {
-            const choices = randomActions.filter(a => a !== action);
-            type = choices[Math.floor(Math.random() * choices.length)];
+            const choices = currentMode === 'nutrition' 
+                ? ['cook', 'slice', 'think', 'celebrate'] 
+                : randomActions;
+            const validChoices = choices.filter(a => a !== action);
+            type = validChoices[Math.floor(Math.random() * validChoices.length)];
         }
         
         if (type === 'workout' && action === 'workout') type = 'reset'; 
         if (type === 'press' && action === 'press') type = 'reset';
         action = type === 'reset' ? 'idle' : type; 
         started = clock.getElapsedTime(); 
+        
+        // Let rhino handle its own reactions if it's active
+        if (currentMode === 'nutrition') {
+            rhino.react(action, started);
+        } 
         
         ideaBulb.visible = action === 'think';
         const working = action === 'workout' || action === 'press'; 
@@ -134,20 +143,36 @@ try {
         talkPulse = 1.0;
     }
     
+    let currentMode = 'fitness';
+    const rhino = createRhino(THREE, scene);
+
     function setMode(mode) {
+        currentMode = mode;
         if (mode === 'nutrition') {
-            shirt.color.set('#ffffff'); // White Chef's Jacket
-            trim.color.set('#e0e0e0');
+            bull.visible = false;
+            rhino.chef.visible = true;
         } else {
-            shirt.color.set('#394743'); // Default Green Gym Shirt
-            trim.color.set('#26332e');
+            bull.visible = true;
+            rhino.chef.visible = false;
         }
     }
     
+    // Give rhino a chance to randomly do something when idle
+    setInterval(() => {
+        if (currentMode === 'nutrition' && action === 'idle' && Math.random() < 0.3) {
+            const actions = ['cook', 'slice'];
+            react(actions[Math.floor(Math.random() * actions.length)]);
+        }
+    }, 4000);
+    
     window.bullAvatar = { react, wordPulse, setMode };
+    
+    function coordinates(e) { const r = canvas.getBoundingClientRect(); pointer.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); }
+    canvas.addEventListener('pointermove', e => { coordinates(e); lookX = pointer.x * .3; lookY = -pointer.y * .13; });
+    
     canvas.addEventListener('pointerleave', () => { lookX = 0; lookY = 0; });
     let down = null; canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; }); canvas.addEventListener('pointercancel', () => down = null);
-    canvas.addEventListener('pointerup', e => { if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) { down = null; return; } down = null; coordinates(e); ray.setFromCamera(pointer, camera); const hit = ray.intersectObject(bull, true)[0]; if (hit) react('random'); });
+    canvas.addEventListener('pointerup', e => { if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) { down = null; return; } down = null; coordinates(e); ray.setFromCamera(pointer, camera); const hit = ray.intersectObject(currentMode === 'fitness' ? bull : rhino.chef, true)[0]; if (hit) react('random'); });
     
     const observer = new ResizeObserver(() => { 
         const w = stage.clientWidth, h = stage.clientHeight; 
@@ -163,6 +188,14 @@ try {
     renderer.setAnimationLoop(() => {
         const t = clock.getElapsedTime(), elapsed = t - started, motion = reduced.matches ? 0 : 1;
         talkPulse = Math.max(0, talkPulse - 0.06);
+
+        if (currentMode === 'nutrition') {
+            rhino.update(t, Math.min(clock.getDelta() || 0.016, 0.05), motion);
+            // Even if rhino doesn't lip-sync, we sync head movement to mouse
+            rhino.chef.rotation.y += (lookX * motion * 0.5); 
+            renderer.render(scene, camera);
+            return;
+        }
 
         const duration = action === 'think' ? 4 : (action === 'workout' || action === 'press') ? 8.8 : 2.2;
 

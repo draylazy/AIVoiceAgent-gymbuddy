@@ -95,7 +95,7 @@ def chat(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     chat_sessions[session_id].append({"role": "user", "content": request.message})
     
     # Pass entire history to AI
-    response_data = ai_service.generate_conversational_response(chat_sessions[session_id])
+    response_data = ai_service.generate_conversational_response(chat_sessions[session_id], request.mode)
     response_text = response_data["text"]
     
     chat_sessions[session_id].append({"role": "assistant", "content": response_text})
