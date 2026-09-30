@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FitBuddy: AI Voice Fitness Coach</title>
+    <title>MealBuddy: AI Nutrition Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=11">
 </head>
-<body>
+<body class="mealbuddy-page">
     <script>
         if (localStorage.getItem('fitbuddy-theme') === 'dark') {
             document.body.classList.add('dark-theme');
@@ -17,12 +17,12 @@
     </script>
     <header class="main-header">
         <div class="logo">
-            <h1>FitBuddy</h1>
+            <h1>MealBuddy</h1>
         </div>
         <nav class="nav-bar">
             <ul>
-                <li><a href="index.html" class="active">Workout</a></li>
-                <li><a href="mealbuddy.html">Nutrition</a></li>
+                <li><a href="index.html">Workout</a></li>
+                <li><a href="mealbuddy.html" class="active">Nutrition</a></li>
                 </ul>
         </nav>
         <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
@@ -42,8 +42,8 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
                 <div class="card-header">
-                    <h2>Let's build your routine</h2>
-                    <span class="live-indicator"><span class="dot"></span> Live coach</span>
+                    <h2>Let's build your meal plan</h2>
+                    <span class="live-indicator"><span class="dot"></span> Live chef</span>
                 </div>
                 <div id="chat-history" class="chat-history"></div>
                 <div class="chat-input-wrapper">
@@ -56,7 +56,7 @@
 
             <!-- Center: Voice Agent Bot -->
             <section class="coach-container">
-                <p class="subtitle">Your AI Voice Fitness Coach</p>
+                <p class="subtitle">Your AI Voice Nutrition Coach</p>
                 <div class="coach-area" id="coach-area">
                     <div id="stage" class="avatar-stage"></div>
                     
@@ -74,7 +74,7 @@
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                         </button>
 
-                        <button class="mobile-action-btn" id="btn-open-plan" aria-label="Workout Plan">
+                        <button class="mobile-action-btn" id="btn-open-plan" aria-label="Meal Plan">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"></path><path d="M3 22h18"></path><path d="M14 22a7 7 0 1 0 0-14h-1"></path><path d="M9 14h2"></path><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path><path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path></svg>
                         </button>
                     </div>
@@ -90,13 +90,13 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
                 <div class="card-header">
-                    <h2>Your workout</h2>
-                    <span class="live-indicator"><span class="dot"></span> Equipment-Aware</span>
+                    <h2>Your meal plan</h2>
+                    <span class="live-indicator"><span class="dot"></span> Calorie-Aware</span>
                 </div>
                 
                 <div id="plan-display" class="plan-display-container">
                     <p style="color: var(--text-secondary); text-align: center; margin-top: 2rem;">
-                        Tell me your goals and what equipment you have, and I'll create a plan for you!
+                        Tell me your goals and dietary preferences, and I'll create a plan for you!
                     </p>
                 </div>
             </section>
