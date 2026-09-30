@@ -203,11 +203,6 @@ function loadVoices() {
         voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.includes('Google US English Male')) ||
         voices.find(v => v.name.includes('Microsoft Mark')) ||
-        voices.find(v => v.name.includes('Microsoft David')) ||
-        // iOS High Quality Voices (Arthur, Aaron, Nicky, Daniel)
-        voices.find(v => v.name.includes('Aaron')) ||
-        voices.find(v => v.name.includes('Arthur')) ||
-        voices.find(v => v.name.includes('Daniel') && v.name.includes('Enhanced')) ||
         voices.find(v => v.name.toLowerCase().includes('male') && v.lang.includes('en-US')) ||
         voices.find(v => v.lang === 'en-US' && !v.name.includes('Fred')) || // Avoid 'Fred' (very robotic)
         voices.find(v => v.lang === 'en-US') ||
