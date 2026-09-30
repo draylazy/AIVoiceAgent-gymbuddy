@@ -578,6 +578,8 @@ window.addEventListener('DOMContentLoaded', () => {
             e.currentTarget.classList.add('active');
             
             const planTitle = document.getElementById('plan-title');
+            const planIndicatorText = document.getElementById('plan-indicator-text');
+            const coachSubtitle = document.getElementById('coach-subtitle');
 
             if (target === 'mealbuddy.html') {
                 document.body.classList.add('mealbuddy-page');
@@ -585,6 +587,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (logo) logo.textContent = "MealBuddy";
                 if (planTitle) planTitle.textContent = "Your Meal Plan";
                 if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Meal Plan";
+                if (planIndicatorText) planIndicatorText.textContent = "Macro-Aware";
+                if (coachSubtitle) coachSubtitle.textContent = "Your AI Voice Nutrition Coach";
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
                 loadChatHistory('nutrition');
                 renderPlan(planDataStore.nutrition);
@@ -594,6 +598,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (logo) logo.textContent = "FitBuddy";
                 if (planTitle) planTitle.textContent = "Your Workout";
                 if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Workout";
+                if (planIndicatorText) planIndicatorText.textContent = "Equipment-Aware";
+                if (coachSubtitle) coachSubtitle.textContent = "Your AI Voice Fitness Coach";
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
                 loadChatHistory('fitness');
                 renderPlan(planDataStore.fitness);
