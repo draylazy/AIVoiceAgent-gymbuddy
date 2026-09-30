@@ -197,13 +197,18 @@ function loadVoices() {
     const voices = synthesis.getVoices();
     if (!voices.length) return;
     
-    // Attempt to find a suitable American male voice (young/energetic if possible)
+    // Attempt to find a suitable high-quality male voice
     preferredVoice = 
         voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.includes('Google US English Male')) ||
         voices.find(v => v.name.includes('Microsoft Mark')) ||
+        voices.find(v => v.name.includes('Microsoft David')) ||
+        // iOS High Quality Voices (Arthur, Aaron, Nicky, Daniel)
+        voices.find(v => v.name.includes('Aaron')) ||
+        voices.find(v => v.name.includes('Arthur')) ||
+        voices.find(v => v.name.includes('Daniel') && v.name.includes('Enhanced')) ||
         voices.find(v => v.name.toLowerCase().includes('male') && v.lang.includes('en-US')) ||
-        voices.find(v => v.lang === 'en-US' && v.name.toLowerCase().includes('guy')) ||
+        voices.find(v => v.lang === 'en-US' && !v.name.includes('Fred')) || // Avoid 'Fred' (very robotic)
         voices.find(v => v.lang === 'en-US') ||
         voices[0];
 }
@@ -223,9 +228,11 @@ function speakText(text) {
     if (preferredVoice) {
         utterance.voice = preferredVoice;
     }
-    // slightly deepen pitch and speed it up for a young energetic coach feel
-    utterance.pitch = 0.95; 
-    utterance.rate = 1.05;
+    
+    // STRICTLY use 1.0 on mobile. Modifying pitch or rate on iOS often forces 
+    // the browser to fall back to a laggy, low-quality software synthesizer.
+    utterance.pitch = 1.0; 
+    utterance.rate = 1.0;
     
     utterance.onstart = () => {
         setAvatarState("speaking");
