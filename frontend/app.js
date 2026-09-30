@@ -199,9 +199,9 @@ function loadVoices() {
     
     // Attempt to find a suitable American male voice (young/energetic if possible)
     preferredVoice = 
+        voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.includes('Google US English Male')) ||
         voices.find(v => v.name.includes('Microsoft Mark')) ||
-        voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.toLowerCase().includes('male') && v.lang.includes('en-US')) ||
         voices.find(v => v.lang === 'en-US' && v.name.toLowerCase().includes('guy')) ||
         voices.find(v => v.lang === 'en-US') ||
