@@ -506,22 +506,44 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) 
         data = data["plan"]
     return WorkoutPlanData(**data)
 
-def _generate_groq_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
-    # Run live web research — always search to keep answers fresh and non-static
-    last_msg = chat_history[-1]["content"]
-    online_context = search_online_fitness(last_msg, max_results=2)
+def _get_system_prompt_for_mode(mode: str) -> str:
+    if mode == "nutrition":
+        return """You are MealBuddy — a highly knowledgeable, energetic, and conversational AI nutrition and diet coach.
 
-    system_prompt = """You are FitBuddy — a highly knowledgeable, energetic, and conversational AI fitness coach.
+Your personality:
+- You speak naturally and warmly, like a real chef or dietitian talking to a client.
+- You respond DIRECTLY to exactly what the user just said — never give generic filler.
+- You have a great memory: you track everything from the conversation.
+- You give SPECIFIC, actionable advice on food, macros, and diet.
+
+CRITICAL DOMAIN RESTRICTION:
+- You are STRICTLY a nutrition and diet coach. 
+- You MUST ONLY answer questions related to food, cooking, diet, macros, and meal planning. 
+- If the user asks about workouts, gym routines, lifting, exercises, or anything physical, YOU MUST POLITELY DECLINE. Tell them you are a chef/nutrition coach and suggest they click the 'Workout' tab at the top of the screen to talk to FitBuddy for exercise advice. Do NOT give them a workout plan.
+"""
+    
+    return """You are FitBuddy — a highly knowledgeable, energetic, and conversational AI fitness coach.
 
 Your personality:
 - You speak naturally and warmly, like a real personal trainer talking to a client.
 - You respond DIRECTLY to exactly what the user just said — never give generic filler.
 - You have a great memory: you track everything from the conversation (equipment mentioned, muscle groups, goals, level).
 - You give SPECIFIC, actionable advice — not vague platitudes.
-- You are STRICTLY a fitness coach. You MUST ONLY answer questions related to fitness, workouts, exercises, nutrition, recovery, and gym equipment. If the user asks about anything else (e.g., programming, politics, history, general knowledge), politely decline and steer the conversation back to fitness.
 
+CRITICAL DOMAIN RESTRICTION:
+- You are STRICTLY a fitness and gym coach. 
+- You MUST ONLY answer questions related to fitness, workouts, exercises, recovery, and gym equipment. 
+- If the user asks about food, diet, macros, cooking, or meal plans, YOU MUST POLITELY DECLINE. Tell them you are a gym coach and suggest they click the 'Nutrition' tab at the top of the screen to talk to MealBuddy for diet advice. Do NOT give them a meal plan.
+"""
+
+def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    
+    # Run live web research — always search to keep answers fresh and non-static
+    last_msg = chat_history[-1]["content"]
+    online_context = search_online_fitness(last_msg, max_results=2)
+
+    system_prompt = _get_system_prompt_for_mode(mode) + """
 Voice rules (replies will be read aloud via text-to-speech):
 - Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
 - Never use bullet points, markdown, or lists in your spoken reply.
@@ -558,11 +580,7 @@ Never say "I heard you say..." — respond naturally as a coach would."""
     completion = _groq_call_with_fallback(client, messages, temperature=0.75, max_tokens=300)
     text = completion.choices[0].message.content.strip()
     
-    last_user_msg = chat_history[-1]["content"].lower()
-    plan_triggers = ["plan", "routine", "workout", "leg day", "back day", "chest day", "arm day", "push day", "pull day", "different", "change"]
-    user_wants_plan = any(t in last_user_msg for t in plan_triggers)
-    
-    if "[GENERATE_PLAN]" in text or user_wants_plan:
+    if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
         if not clean_text:
             clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
@@ -582,23 +600,23 @@ Never say "I heard you say..." — respond naturally as a coach would."""
         
     return {"text": text}
 
-def _generate_gemini_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
+def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     model = get_gemini_model()
     
     history_str = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history])
     
     prompt = f"""
-    You are FitBuddy, a warm, motivating, equipment-aware AI fitness voice coach.
+    {_get_system_prompt_for_mode(mode)}
+    
     You are speaking with the user through voice synthesis (text-to-speech).
     Keep your replies concise, natural, and direct (1 to 3 sentences max) so they sound great when read aloud.
     Directly address and answer what the user asked or said.
     
-    CRITICAL DOMAIN RESTRICTION:
-    You are STRICTLY a fitness coach. You MUST ONLY answer questions related to fitness, workouts, exercises, nutrition, recovery, and gym equipment. If the user asks about anything else (e.g., programming, politics, history, general knowledge), politely decline and steer the conversation back to fitness.
-    
     Conversation history:
     {history_str}
+    
+    Respond directly to the last message, continuing the persona:
     
     CRITICAL SYSTEM INSTRUCTION regarding Workout Plans:
     You have a connected app interface that can display a workout plan visually to the user.
@@ -617,11 +635,7 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
     response = model.generate_content(prompt)
     text = response.text.strip()
     
-    last_user_msg = chat_history[-1]["content"].lower()
-    plan_triggers = ["plan", "routine", "workout", "leg day", "back day", "chest day", "arm day", "push day", "pull day", "different", "change"]
-    user_wants_plan = any(t in last_user_msg for t in plan_triggers)
-    
-    if "[GENERATE_PLAN]" in text or user_wants_plan:
+    if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
         if not clean_text:
             clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
@@ -641,19 +655,19 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
         
     return {"text": text}
 
-def generate_conversational_response(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
+def generate_conversational_response(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
     provider = get_ai_provider()
     
     if provider == "groq" and GROQ_AVAILABLE:
         try:
-            return _generate_groq_chat(chat_history)
+            return _generate_groq_chat(chat_history, mode)
         except Exception as e:
             print(f"Groq chat error: {e}. Falling back to conversational dialogue engine.")
             return _conversational_offline_engine(chat_history)
             
     if provider == "gemini" and GENAI_AVAILABLE:
         try:
-            return _generate_gemini_chat(chat_history)
+            return _generate_gemini_chat(chat_history, mode)
         except Exception as e:
             print(f"Gemini live error: {e}. Falling back to conversational dialogue engine.")
             return _conversational_offline_engine(chat_history)

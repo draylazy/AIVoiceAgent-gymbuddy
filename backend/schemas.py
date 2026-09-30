@@ -65,6 +65,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    mode: str = "fitness"
 
 class ChatResponse(BaseModel):
     response: str

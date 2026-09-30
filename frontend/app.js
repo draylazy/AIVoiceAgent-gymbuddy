@@ -2,8 +2,18 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? (window.location.port ? window.location.origin : 'http://localhost:8000') 
     : window.location.origin;
-let sessionId = "user_" + Math.floor(Math.random() * 10000); // Simple anonymous session
-
+let sessions = {
+    fitness: "fit_" + Math.floor(Math.random() * 10000),
+    nutrition: "nutri_" + Math.floor(Math.random() * 10000)
+};
+let chatData = {
+    fitness: [],
+    nutrition: []
+};
+let planDataStore = {
+    fitness: null,
+    nutrition: null
+};
 // Speech APIs
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synthesis = window.speechSynthesis;
@@ -169,12 +179,23 @@ function resetChatControls() {
     }
 }
 
-function addChatMessage(role, text) {
+function addChatMessage(role, text, isLoad = false) {
+    if (!isLoad) {
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+        chatData[currentMode].push({role, text});
+    }
     const div = document.createElement("div");
     div.className = `chat-msg msg-${role}`;
     div.textContent = text;
     chatHistory.appendChild(div);
     chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function loadChatHistory(mode) {
+    chatHistory.innerHTML = '';
+    chatData[mode].forEach(msg => {
+        addChatMessage(msg.role, msg.text, true);
+    });
 }
 
 // Voice Selection logic
@@ -349,12 +370,14 @@ btnSend.addEventListener("click", async () => {
     coachStatus.textContent = "Thinking...";
     
     try {
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
         const response = await fetch(`${API_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 message: text,
-                session_id: sessionId
+                session_id: sessions[currentMode],
+                mode: currentMode
             })
         });
         
@@ -366,6 +389,7 @@ btnSend.addEventListener("click", async () => {
             
             // If the AI generated a plan, display it
             if (data.plan_data) {
+                planDataStore[currentMode] = data.plan_data;
                 renderPlan(data.plan_data);
                 setAvatarState("celebrate");
                 // Wait for the jump animation before waving while speaking
@@ -384,7 +408,13 @@ btnSend.addEventListener("click", async () => {
 });
 
 function renderPlan(planData) {
-    if (!planData.sessions || planData.sessions.length === 0) return;
+    if (!planData || !planData.sessions || planData.sessions.length === 0) {
+        planDisplay.innerHTML = `
+            <p style="color: var(--text-secondary); text-align: center; margin-top: 2rem;">
+                Tell me your goals, and I'll create a plan for you!
+            </p>`;
+        return;
+    }
     
     const session = planData.sessions[0]; // just show the first session for now
     
@@ -501,6 +531,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // Restore focus to opening button could be added here
     }
     
+    const desktopBtnOpenPlan = document.getElementById('desktop-btn-open-plan');
+    const desktopPlanTitle = document.getElementById('desktop-plan-title');
+    
+    if (desktopBtnOpenPlan) {
+        desktopBtnOpenPlan.addEventListener('click', () => {
+            closeAllSheets();
+            planSheet.classList.add('open');
+            sheetBackdrop.classList.add('active');
+        });
+    }
+    
     if (btnOpenChat) {
         btnOpenChat.addEventListener('click', () => {
             closeAllSheets();
@@ -517,6 +558,11 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllSheets();
+    });
+    
     if (btnCloseChat) btnCloseChat.addEventListener('click', closeAllSheets);
     if (btnClosePlan) btnClosePlan.addEventListener('click', closeAllSheets);
     if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeAllSheets);
@@ -530,17 +576,27 @@ window.addEventListener('DOMContentLoaded', () => {
             
             document.querySelectorAll('.nav-bar a').forEach(a => a.classList.remove('active'));
             e.currentTarget.classList.add('active');
+            
+            const planTitle = document.getElementById('plan-title');
 
             if (target === 'mealbuddy.html') {
                 document.body.classList.add('mealbuddy-page');
                 const logo = document.querySelector('.logo h1');
                 if (logo) logo.textContent = "MealBuddy";
+                if (planTitle) planTitle.textContent = "Your Meal Plan";
+                if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Meal Plan";
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
+                loadChatHistory('nutrition');
+                renderPlan(planDataStore.nutrition);
             } else {
                 document.body.classList.remove('mealbuddy-page');
                 const logo = document.querySelector('.logo h1');
                 if (logo) logo.textContent = "FitBuddy";
+                if (planTitle) planTitle.textContent = "Your Workout";
+                if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Workout";
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
+                loadChatHistory('fitness');
+                renderPlan(planDataStore.fitness);
             }
         });
     });
