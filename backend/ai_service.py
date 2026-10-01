@@ -536,14 +536,33 @@ CRITICAL DOMAIN RESTRICTION:
 - If the user asks about food, diet, macros, cooking, or meal plans, YOU MUST POLITELY DECLINE. Tell them you are a gym coach and suggest they click the 'Nutrition' tab at the top of the screen to talk to MealBuddy for diet advice. Do NOT give them a meal plan.
 """
 
-def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
-    # Run live web research — always search to keep answers fresh and non-static
-    last_msg = chat_history[-1]["content"]
-    online_context = search_online_fitness(last_msg, max_results=2)
 
-    system_prompt = _get_system_prompt_for_mode(mode) + """
+def _get_voice_rules_for_mode(mode: str) -> str:
+    if mode == "nutrition":
+        return """
+Voice rules (replies will be read aloud via text-to-speech):
+- Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
+- Never use bullet points, markdown, or lists in your spoken reply.
+- If a user mentions a specific food or diet (e.g., keto, chicken breast), give a KEY nutritional tip immediately.
+- If a user says what their goal is, give 2-3 top food choices for it.
+
+CRITICAL SYSTEM INSTRUCTION regarding Meal Plans:
+You have a connected app interface that can display a meal plan visually to the user.
+Whenever the user asks you to:
+1. Create a meal plan
+2. Make a diet routine
+3. Change their current meal plan
+4. Give them a new day of meals
+
+You MUST, WITHOUT FAIL, append this exact string to the very end of your response:
+[GENERATE_PLAN]
+
+Example: "Let's switch gears and build some serious muscle with a high-protein diet! I've updated your meal plan on the right. [GENERATE_PLAN]"
+
+Do NOT add the tag for simple food tips or single recipe questions.
+Never say "I heard you say..." — respond naturally as a chef would."""
+    
+    return """
 Voice rules (replies will be read aloud via text-to-speech):
 - Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
 - Never use bullet points, markdown, or lists in your spoken reply.
@@ -565,6 +584,16 @@ Example: "Let's switch gears and build some serious lower body strength! I've up
 
 Do NOT add the tag for simple form tips or single exercise questions.
 Never say "I heard you say..." — respond naturally as a coach would."""
+
+
+def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    
+    # Run live web research — always search to keep answers fresh and non-static
+    last_msg = chat_history[-1]["content"]
+    online_context = search_online_fitness(last_msg, max_results=2)
+
+    system_prompt = _get_system_prompt_for_mode(mode) + _get_voice_rules_for_mode(mode)
 
     if online_context:
         system_prompt += f"\n\nLatest fitness research you can reference:\n{online_context}"
@@ -618,18 +647,7 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitne
     
     Respond directly to the last message, continuing the persona:
     
-    CRITICAL SYSTEM INSTRUCTION regarding Workout Plans:
-    You have a connected app interface that can display a workout plan visually to the user.
-    Whenever the user asks you to:
-    1. Create a workout plan
-    2. Make a routine
-    3. Change their current workout plan
-    4. Give them a new day (e.g. "give me a leg day")
-
-    You MUST, WITHOUT FAIL, append this exact string to the very end of your response:
-    [GENERATE_PLAN]
-
-    Example: "Let's switch gears and build some serious lower body strength! I've updated your plan on the right. [GENERATE_PLAN]"
+    {_get_voice_rules_for_mode(mode)}
     """
     
     response = model.generate_content(prompt)

@@ -7,8 +7,14 @@ let sessions = {
     nutrition: "nutri_" + Math.floor(Math.random() * 10000)
 };
 let chatData = {
-    fitness: [],
-    nutrition: []
+    fitness: [
+        {role: "coach", text: "Hi there! I'm FitBuddy. Tell me what equipment you have and your fitness goals, and I'll create a plan for you!"},
+        {role: "coach", text: "💡 Hint: Try asking for modifications, a harder version, or a plan for a specific goal."}
+    ],
+    nutrition: [
+        {role: "coach", text: "Hi there! I'm MealBuddy. Tell me your goals and dietary preferences, and I'll create a plan for you!"},
+        {role: "coach", text: "💡 Hint: Try asking for recipe ideas, macro adjustments, or a meal plan for a specific goal."}
+    ]
 };
 let planDataStore = {
     fitness: null,
@@ -486,17 +492,7 @@ function renderPlan(planData) {
 // Initial greeting and Theme Setup
 window.addEventListener('DOMContentLoaded', () => {
     const isMealBuddy = document.body.classList.contains("mealbuddy-page");
-    
-    const greeting = isMealBuddy 
-        ? "Hi there! I'm MealBuddy. Tell me your goals and dietary preferences, and I'll create a plan for you!"
-        : "Hi there! I'm FitBuddy. Tell me what equipment you have and your fitness goals, and I'll create a plan for you!";
-        
-    const hint = isMealBuddy
-        ? "💡 Hint: Try asking for recipe ideas, macro adjustments, or a meal plan for a specific goal."
-        : "💡 Hint: Try asking for modifications, a harder version, or a plan for a specific goal.";
-
-    addChatMessage("coach", greeting);
-    addChatMessage("coach", hint);
+    loadChatHistory(isMealBuddy ? 'nutrition' : 'fitness');
     // Don't auto-speak on load to prevent browser autoplay blocking, wait for user interaction
     
     // Theme Toggle
