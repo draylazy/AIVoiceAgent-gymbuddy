@@ -21,9 +21,9 @@
         </div>
         <nav class="nav-bar">
             <ul>
-                <li><a href="index.html" class="active">Workout</a></li>
-                <li><a href="mealbuddy.html">Nutrition</a></li>
-                </ul>
+                <li><a href="index.html" class="active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/></svg> Workout</a></li>
+                <li><a href="mealbuddy.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg> Nutrition</a></li>
+            </ul>
         </nav>
         <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -41,9 +41,10 @@
                 <button class="sheet-close-btn" id="btn-close-chat" aria-label="Close Chat">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
-                <div class="card-header">
-                    <h2>Let's build your routine</h2>
-                    <span class="live-indicator"><span class="dot"></span> Live coach</span>
+                <div class="card-header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; position: relative; margin-bottom: 2rem;">
+                    <div id="chat-header-sub" style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-tertiary); text-transform: uppercase;">Let's build your routine</div>
+                    <h2 id="chat-header-main" style="font-size: 2.8rem; font-weight: 800; line-height: 1.1; margin-top: 0;">What are we <span style="color: var(--accent-dark-green);">training</span> today?</h2>
+                    <span id="chat-live-indicator" class="live-indicator" style="position: absolute; top: 0; right: 0; background: var(--bg-card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--glass-border); padding: 0.4rem 1rem;"><span class="dot"></span> Live coach</span>
                 </div>
                 <div id="chat-history" class="chat-history"></div>
                 <div class="chat-input-wrapper">
@@ -56,16 +57,21 @@
 
             <!-- Right: Voice Agent Bot -->
             <section class="coach-container">
-                <button id="desktop-btn-open-plan" class="desktop-plan-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"></path><path d="M3 22h18"></path><path d="M14 22a7 7 0 1 0 0-14h-1"></path><path d="M9 14h2"></path><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path><path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path></svg>
-                    <span id="desktop-plan-title">Your Workout</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-                <p class="subtitle" id="coach-subtitle">Your AI Voice Fitness Coach</p>
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 40px; padding: 0.4rem; border: 1px solid var(--glass-border); z-index: 10;">
+                    <div id="desktop-btn-open-plan" style="display: flex; align-items: center; background: var(--bg-card); border-radius: 40px; padding: 0.4rem 1rem 0.4rem 0.4rem; cursor: pointer; gap: 0.5rem; border: 1px solid var(--glass-border);">
+                        <div style="background: var(--accent-pale-green); color: var(--accent-dark-green); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" id="floatie-icon-container">
+                           <svg id="floatie-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/></svg>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                           <span id="floatie-main-text" style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem; color: var(--text-primary);">Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+                           <span style="font-size: 0.65rem; color: var(--text-tertiary);">View your current plan</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="coach-area" id="coach-area">
                     <div id="stage" class="avatar-stage"></div>
                     
-                    <div class="ready-indicator" id="coach-status">
+                    <div class="ready-indicator" id="coach-status" style="background: var(--bg-card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--glass-border); padding: 0.3rem 1rem; border-radius: 20px; font-weight: 600;">
                         <span class="dot"></span> Ready when you are
                     </div>
                     

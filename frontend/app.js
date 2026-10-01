@@ -1,6 +1,6 @@
 // Use relative path for production, localhost for local development if needed
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? (window.location.port ? window.location.origin : 'http://localhost:8000') 
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? (window.location.port ? window.location.origin : 'http://localhost:8000')
     : window.location.origin;
 let sessions = {
     fitness: "fit_" + Math.floor(Math.random() * 10000),
@@ -8,12 +8,12 @@ let sessions = {
 };
 let chatData = {
     fitness: [
-        {role: "coach", text: "Hi there! I'm FitBuddy. Tell me what equipment you have and your fitness goals, and I'll create a plan for you!"},
-        {role: "coach", text: "💡 Hint: Try asking for modifications, a harder version, or a plan for a specific goal."}
+        { role: "coach", text: "Hi there! I'm FitBuddy. Tell me what equipment you have and your fitness goals, and I'll create a plan for you!" },
+        { role: "coach", text: "💡 Hint: Try asking for modifications, a harder version, or a plan for a specific goal." }
     ],
     nutrition: [
-        {role: "coach", text: "Hi there! I'm MealBuddy. Tell me your goals and dietary preferences, and I'll create a plan for you!"},
-        {role: "coach", text: "💡 Hint: Try asking for recipe ideas, macro adjustments, or a meal plan for a specific goal."}
+        { role: "coach", text: "Hi there! I'm MealBuddy. Tell me your goals and dietary preferences, and I'll create a plan for you!" },
+        { role: "coach", text: "💡 Hint: Try asking for recipe ideas, macro adjustments, or a meal plan for a specific goal." }
     ]
 };
 let planDataStore = {
@@ -77,7 +77,7 @@ if (SpeechRecognition) {
 
     recognition.onresult = (event) => {
         let interimTranscript = '';
-        
+
         // Loop through the results starting from the current index
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
@@ -86,10 +86,10 @@ if (SpeechRecognition) {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
-        
+
         // Display both finalized text and currently spoken text
         chatInput.value = (finalTranscript + interimTranscript).trim();
-        
+
         // Reset the silence timer every time we hear a new word
         clearTimeout(silenceTimer);
         silenceTimer = setTimeout(() => {
@@ -114,7 +114,7 @@ if (SpeechRecognition) {
         isListening = false;
         btnMic.classList.remove("mic-active");
         clearTimeout(silenceTimer);
-        
+
         if (chatInput.value.trim() !== "") {
             setAvatarState("idle");
             coachStatus.textContent = "Sending...";
@@ -143,7 +143,7 @@ function resetIdleTimer() {
 }
 
 // Hook into the avatar.js click handler so user clicks also reset the idle timer
-window.onAvatarAction = function(action) {
+window.onAvatarAction = function (action) {
     if (action !== 'idle' && action !== 'talk') {
         resetIdleTimer();
     }
@@ -151,7 +151,7 @@ window.onAvatarAction = function(action) {
 
 function setAvatarState(state) {
     coachArea.className = `coach-area state-${state}`;
-    
+
     if (window.bullAvatar) {
         if (state === "listening") {
             window.bullAvatar.react('nod');
@@ -165,7 +165,7 @@ function setAvatarState(state) {
             window.bullAvatar.react('jump');
         }
     }
-    
+
     // Manage idle timer
     if (state === "idle") {
         resetIdleTimer();
@@ -188,12 +188,33 @@ function resetChatControls() {
 function addChatMessage(role, text, isLoad = false) {
     if (!isLoad) {
         let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        chatData[currentMode].push({role, text});
+        chatData[currentMode].push({ role, text });
     }
-    const div = document.createElement("div");
-    div.className = `chat-msg msg-${role}`;
-    div.textContent = text;
-    chatHistory.appendChild(div);
+    const wrapper = document.createElement("div");
+    wrapper.className = `chat-msg-wrapper wrapper-${role}`;
+    
+    const avatar = document.createElement("div");
+    avatar.className = `chat-avatar avatar-${role}`;
+    
+    if (role === 'coach') {
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+        if (currentMode === 'nutrition') {
+            avatar.innerHTML = `<img src="avatar-rhino.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+            avatar.innerHTML = `<img src="avatar-bull.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        }
+    } else {
+        avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    }
+
+    const msgBubble = document.createElement("div");
+    msgBubble.className = `chat-msg msg-${role}`;
+    msgBubble.textContent = text;
+    
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(msgBubble);
+
+    chatHistory.appendChild(wrapper);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
@@ -209,9 +230,9 @@ let preferredVoice = null;
 function loadVoices() {
     const voices = synthesis.getVoices();
     if (!voices.length) return;
-    
+
     // Attempt to find a suitable high-quality male voice
-    preferredVoice = 
+    preferredVoice =
         voices.find(v => v.name.includes('Microsoft David')) ||
         voices.find(v => v.name.includes('Google US English Male')) ||
         voices.find(v => v.name.includes('Microsoft Mark')) ||
@@ -289,37 +310,37 @@ function playAudio(text, audioUrl) {
 function speakText(text) {
     if (!synthesis) return;
     synthesis.cancel();
-    
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     if (preferredVoice) {
         utterance.voice = preferredVoice;
     }
-    
+
     // STRICTLY use 1.0 on mobile. Modifying pitch or rate on iOS often forces 
     // the browser to fall back to a laggy, low-quality software synthesizer.
-    utterance.pitch = 1.0; 
+    utterance.pitch = 1.0;
     utterance.rate = 1.0;
-    
+
     utterance.onstart = () => {
         setAvatarState("speaking");
         coachStatus.textContent = "Speaking...";
         updateMicIcon("stop");
     };
-    
+
     // Trigger the avatar's word pulse precisely when each word is spoken!
     utterance.onboundary = (event) => {
         if (event.name === 'word' && window.bullAvatar && window.bullAvatar.wordPulse) {
             window.bullAvatar.wordPulse();
         }
     };
-    
+
     utterance.onend = () => {
         setAvatarState("idle");
         coachStatus.textContent = "Ready";
         updateMicIcon("mic");
     };
-    
+
     utterance.onerror = (event) => {
         // If it was canceled by the user, or if iOS silently drops it, 
         // just quietly reset to ready instead of showing an error.
@@ -335,12 +356,12 @@ function speakText(text) {
 btnMic.addEventListener("click", () => {
     const wasSpeaking = (currentAudio && !currentAudio.paused) || (synthesis && synthesis.speaking);
     unlockSpeech();
-    
+
     if (isListening) {
         recognition.stop();
         return;
     }
-    
+
     if (wasSpeaking) {
         stopAudioPlayback();
         setAvatarState("idle");
@@ -348,12 +369,12 @@ btnMic.addEventListener("click", () => {
         updateMicIcon("mic");
         return;
     }
-    
+
     if (recognition && !isListening) {
         stopAudioPlayback();
         try {
             recognition.start();
-        } catch(e) {
+        } catch (e) {
             console.error(e);
         }
     }
@@ -369,12 +390,12 @@ btnSend.addEventListener("click", async () => {
     unlockSpeech();
     const text = chatInput.value.trim();
     if (!text) return;
-    
+
     addChatMessage("user", text);
     resetChatControls();
     setAvatarState("thinking");
     coachStatus.textContent = "Thinking...";
-    
+
     try {
         let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
         const response = await fetch(`${API_URL}/chat`, {
@@ -386,13 +407,13 @@ btnSend.addEventListener("click", async () => {
                 mode: currentMode
             })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             const coachText = data.response || "Here is your plan!";
             addChatMessage("coach", coachText);
             playAudio(coachText, data.audio_url);
-            
+
             // If the AI generated a plan, display it
             if (data.plan_data) {
                 planDataStore[currentMode] = data.plan_data;
@@ -421,9 +442,9 @@ function renderPlan(planData) {
             </p>`;
         return;
     }
-    
+
     const session = planData.sessions[0]; // just show the first session for now
-    
+
     // Title
     let html = `
         <h3>${session.explanation || 'Targeted Workout'}</h3>
@@ -432,7 +453,7 @@ function renderPlan(planData) {
         </p>
         <div class="exercises-list">
     `;
-    
+
     let exNum = 1;
 
     // Warmup
@@ -480,12 +501,12 @@ function renderPlan(planData) {
     `;
 
     html += `</div>`;
-    
+
     const adviceText = Array.isArray(planData.general_advice) ? planData.general_advice.join(" ") : planData.general_advice;
     if (adviceText) {
         html += `<p style="margin-top: 1rem; font-size: 0.85rem; padding: 1rem; background: var(--accent-pale-green); border-radius: 12px;"><strong>Coach's Note:</strong> ${adviceText}</p>`;
     }
-    
+
     planDisplay.innerHTML = html;
 }
 
@@ -494,7 +515,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const isMealBuddy = document.body.classList.contains("mealbuddy-page");
     loadChatHistory(isMealBuddy ? 'nutrition' : 'fitness');
     // Don't auto-speak on load to prevent browser autoplay blocking, wait for user interaction
-    
+
     // Theme Toggle
     const themeToggleBtn = document.getElementById('theme-toggle');
     if (themeToggleBtn) {
@@ -504,13 +525,13 @@ window.addEventListener('DOMContentLoaded', () => {
             const isDark = document.body.classList.contains('dark-theme');
             localStorage.setItem('fitbuddy-theme', isDark ? 'dark' : 'light');
         });
-        
+
         // Check saved preference on load (defaults to light mode)
         if (localStorage.getItem('fitbuddy-theme') === 'dark') {
             document.body.classList.add('dark-theme');
         }
     }
-    
+
     // --- Mobile Bottom Sheets Logic ---
     const btnOpenChat = document.getElementById('btn-open-chat');
     const btnOpenPlan = document.getElementById('btn-open-plan');
@@ -519,17 +540,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const chatSheet = document.getElementById('chat-sheet');
     const planSheet = document.getElementById('plan-sheet');
     const sheetBackdrop = document.getElementById('sheet-backdrop');
-    
+
     function closeAllSheets() {
         if (chatSheet) chatSheet.classList.remove('open');
         if (planSheet) planSheet.classList.remove('open');
         if (sheetBackdrop) sheetBackdrop.classList.remove('active');
         // Restore focus to opening button could be added here
     }
-    
+
     const desktopBtnOpenPlan = document.getElementById('desktop-btn-open-plan');
     const desktopPlanTitle = document.getElementById('desktop-plan-title');
-    
+
     if (desktopBtnOpenPlan) {
         desktopBtnOpenPlan.addEventListener('click', () => {
             closeAllSheets();
@@ -537,7 +558,7 @@ window.addEventListener('DOMContentLoaded', () => {
             sheetBackdrop.classList.add('active');
         });
     }
-    
+
     if (btnOpenChat) {
         btnOpenChat.addEventListener('click', () => {
             closeAllSheets();
@@ -545,7 +566,7 @@ window.addEventListener('DOMContentLoaded', () => {
             sheetBackdrop.classList.add('active');
         });
     }
-    
+
     if (btnOpenPlan) {
         btnOpenPlan.addEventListener('click', () => {
             closeAllSheets();
@@ -553,12 +574,12 @@ window.addEventListener('DOMContentLoaded', () => {
             sheetBackdrop.classList.add('active');
         });
     }
-    
+
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeAllSheets();
     });
-    
+
     if (btnCloseChat) btnCloseChat.addEventListener('click', closeAllSheets);
     if (btnClosePlan) btnClosePlan.addEventListener('click', closeAllSheets);
     if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeAllSheets);
@@ -569,22 +590,33 @@ window.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const target = e.currentTarget.getAttribute('href');
             if (e.currentTarget.classList.contains('active')) return;
-            
+
             document.querySelectorAll('.nav-bar a').forEach(a => a.classList.remove('active'));
             e.currentTarget.classList.add('active');
-            
+
             const planTitle = document.getElementById('plan-title');
             const planIndicatorText = document.getElementById('plan-indicator-text');
-            const coachSubtitle = document.getElementById('coach-subtitle');
+
+            const chatHeaderSub = document.getElementById('chat-header-sub');
+            const chatHeaderMain = document.getElementById('chat-header-main');
+            const chatLiveIndicator = document.getElementById('chat-live-indicator');
+            const floatieMainText = document.getElementById('floatie-main-text');
+            const floatieIcon = document.getElementById('floatie-icon');
 
             if (target === 'mealbuddy.html') {
                 document.body.classList.add('mealbuddy-page');
                 const logo = document.querySelector('.logo h1');
                 if (logo) logo.textContent = "MealBuddy";
-                if (planTitle) planTitle.textContent = "Your Meal Plan";
-                if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Meal Plan";
-                if (planIndicatorText) planIndicatorText.textContent = "Macro-Aware";
-                if (coachSubtitle) coachSubtitle.textContent = "Your AI Voice Nutrition Coach";
+                if (planTitle) planTitle.textContent = "Your meal plan";
+                if (planIndicatorText) planIndicatorText.textContent = "Calorie-Aware";
+
+                if (chatHeaderSub) chatHeaderSub.textContent = "Let's build your meal plan";
+                if (chatHeaderMain) chatHeaderMain.innerHTML = `What are we <span style="color: var(--accent-dark-green);">eating</span> today?`;
+                if (chatLiveIndicator) chatLiveIndicator.innerHTML = `<span class="dot"></span> Live chef`;
+
+                if (floatieMainText) floatieMainText.innerHTML = `Your Meal Plan <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+                if (floatieIcon) floatieIcon.innerHTML = `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>`;
+
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
                 loadChatHistory('nutrition');
                 renderPlan(planDataStore.nutrition);
@@ -593,9 +625,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 const logo = document.querySelector('.logo h1');
                 if (logo) logo.textContent = "FitBuddy";
                 if (planTitle) planTitle.textContent = "Your Workout";
-                if (desktopPlanTitle) desktopPlanTitle.textContent = "Your Workout";
                 if (planIndicatorText) planIndicatorText.textContent = "Equipment-Aware";
-                if (coachSubtitle) coachSubtitle.textContent = "Your AI Voice Fitness Coach";
+
+                if (chatHeaderSub) chatHeaderSub.textContent = "Let's build your routine";
+                if (chatHeaderMain) chatHeaderMain.innerHTML = `What are we <span style="color: var(--accent-dark-green);">training</span> today?`;
+                if (chatLiveIndicator) chatLiveIndicator.innerHTML = `<span class="dot"></span> Live coach`;
+
+                if (floatieMainText) floatieMainText.innerHTML = `Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+                if (floatieIcon) floatieIcon.innerHTML = `<path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/>`;
+
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
                 loadChatHistory('fitness');
                 renderPlan(planDataStore.fitness);
