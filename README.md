@@ -33,7 +33,7 @@ FitBuddy is an educational AI fitness assistant built as a school project. It he
    - If you want live AI, get a key from [Google AI Studio](https://aistudio.google.com/) and update `GEMINI_API_KEY` in `.env`, and set `USE_MOCK_AI=false`.
 7. **Run the Server**:
    ```powershell
-   uvicorn backend.main:app --reload
+   c
    ```
 8. **Open in Browser**: Navigate to `http://localhost:8000/`
 
