@@ -40,8 +40,10 @@ function unlockSpeech() {
 function updateMicIcon(state) {
     if (state === "stop") {
         btnMic.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>`;
+        btnMic.classList.add("mic-stop");
     } else {
         btnMic.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+        btnMic.classList.remove("mic-stop");
     }
 }
 
@@ -56,6 +58,8 @@ const planDisplay = document.getElementById("plan-display");
 
 let silenceTimer = null;
 let finalTranscript = ''; // Store finalized sentences
+let tempUserMsgWrapper = null;
+let tempUserMsgBubble = null;
 
 // Initialize Speech
 if (SpeechRecognition) {
@@ -75,6 +79,19 @@ if (SpeechRecognition) {
         chatInput.value = "";
         btnSend.disabled = true;
         chatInput.disabled = true;
+
+        // Create temporary message bubble
+        tempUserMsgWrapper = document.createElement("div");
+        tempUserMsgWrapper.className = `chat-msg-wrapper wrapper-user`;
+        const avatar = document.createElement("div");
+        avatar.className = `chat-avatar avatar-user`;
+        avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+        tempUserMsgBubble = document.createElement("div");
+        tempUserMsgBubble.className = `chat-msg msg-user temp-msg`;
+        tempUserMsgWrapper.appendChild(avatar);
+        tempUserMsgWrapper.appendChild(tempUserMsgBubble);
+        chatHistory.appendChild(tempUserMsgWrapper);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     };
 
     recognition.onresult = (event) => {
@@ -89,8 +106,13 @@ if (SpeechRecognition) {
             }
         }
 
-        // Display both finalized text and currently spoken text
-        chatInput.value = (finalTranscript + interimTranscript).trim();
+        // Get both finalized text and currently spoken text
+        let fullText = (finalTranscript + interimTranscript).trim();
+        if (tempUserMsgBubble) {
+            tempUserMsgBubble.textContent = fullText + "...";
+            tempUserMsgBubble.dataset.fullText = fullText;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
 
         // Reset the silence timer every time we hear a new word
         clearTimeout(silenceTimer);
@@ -104,6 +126,11 @@ if (SpeechRecognition) {
 
     recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
+        if (tempUserMsgWrapper) {
+            tempUserMsgWrapper.remove();
+            tempUserMsgWrapper = null;
+            tempUserMsgBubble = null;
+        }
         setAvatarState("error");
         coachStatus.textContent = "Microphone error";
         btnMic.classList.remove("mic-active");
@@ -121,7 +148,19 @@ if (SpeechRecognition) {
         btnSend.disabled = false;
         chatInput.disabled = false;
 
-        if (chatInput.value.trim() !== "") {
+        let spokenText = "";
+        if (tempUserMsgBubble && tempUserMsgBubble.dataset.fullText) {
+            spokenText = tempUserMsgBubble.dataset.fullText;
+        }
+
+        if (tempUserMsgWrapper) {
+            tempUserMsgWrapper.remove();
+            tempUserMsgWrapper = null;
+            tempUserMsgBubble = null;
+        }
+
+        if (spokenText.trim() !== "") {
+            chatInput.value = spokenText;
             setAvatarState("idle");
             coachStatus.textContent = "Sending...";
             setTimeout(() => btnSend.click(), 100);
@@ -191,11 +230,19 @@ function resetChatControls() {
     }
 }
 
-function addChatMessage(role, text, isLoad = false) {
+function addChatMessage(role, text, isLoad = false, modeOverride = null) {
+    let currentActiveMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+    let targetMode = modeOverride || currentActiveMode;
+
     if (!isLoad) {
-        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        chatData[currentMode].push({ role, text });
+        chatData[targetMode].push({ role, text });
     }
+
+    // Only append to DOM if the target mode matches the currently active mode
+    if (targetMode !== currentActiveMode) {
+        return;
+    }
+
     const wrapper = document.createElement("div");
     wrapper.className = `chat-msg-wrapper wrapper-${role}`;
     
@@ -203,8 +250,7 @@ function addChatMessage(role, text, isLoad = false) {
     avatar.className = `chat-avatar avatar-${role}`;
     
     if (role === 'coach') {
-        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        if (currentMode === 'nutrition') {
+        if (targetMode === 'nutrition') {
             avatar.innerHTML = `<img src="avatar-rhino.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         } else {
             avatar.innerHTML = `<img src="avatar-bull.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -224,10 +270,43 @@ function addChatMessage(role, text, isLoad = false) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+let typingIndicator = null;
+
+function showTypingIndicator() {
+    if (typingIndicator) return;
+    typingIndicator = document.createElement("div");
+    typingIndicator.className = `chat-msg-wrapper wrapper-coach typing-indicator-wrapper`;
+    
+    let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+    const avatar = document.createElement("div");
+    avatar.className = `chat-avatar avatar-coach`;
+    if (currentMode === 'nutrition') {
+        avatar.innerHTML = `<img src="avatar-rhino.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    } else {
+        avatar.innerHTML = `<img src="avatar-bull.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    }
+
+    const msgBubble = document.createElement("div");
+    msgBubble.className = `chat-msg msg-coach typing-bubble`;
+    msgBubble.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+    
+    typingIndicator.appendChild(avatar);
+    typingIndicator.appendChild(msgBubble);
+    chatHistory.appendChild(typingIndicator);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    if (typingIndicator) {
+        typingIndicator.remove();
+        typingIndicator = null;
+    }
+}
+
 function loadChatHistory(mode) {
     chatHistory.innerHTML = '';
     chatData[mode].forEach(msg => {
-        addChatMessage(msg.role, msg.text, true);
+        addChatMessage(msg.role, msg.text, true, mode);
     });
 }
 
@@ -396,12 +475,14 @@ let abortController = null;
 
 btnSend.addEventListener("click", async () => {
     if (abortController) {
+        removeTypingIndicator();
         abortController.abort();
         abortController = null;
         setAvatarState("idle");
         coachStatus.textContent = "Canceled";
         setTimeout(() => { if (coachStatus.textContent === "Canceled") coachStatus.textContent = "Ready"; }, 2000);
         btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        btnSend.classList.remove("btn-stop");
         return;
     }
 
@@ -409,16 +490,19 @@ btnSend.addEventListener("click", async () => {
     const text = chatInput.value.trim();
     if (!text) return;
 
-    addChatMessage("user", text);
+    let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+
+    addChatMessage("user", text, false, currentMode);
     resetChatControls();
     setAvatarState("thinking");
     coachStatus.textContent = "Thinking...";
+    showTypingIndicator();
     btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>`;
+    btnSend.classList.add("btn-stop");
 
     abortController = new AbortController();
 
     try {
-        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
         const response = await fetch(`${API_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -430,29 +514,42 @@ btnSend.addEventListener("click", async () => {
             signal: abortController.signal
         });
 
+        removeTypingIndicator();
         abortController = null;
         btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        btnSend.classList.remove("btn-stop");
 
         if (response.ok) {
             const data = await response.json();
             const coachText = data.response || "Here is your plan!";
-            addChatMessage("coach", coachText);
-            playAudio(coachText, data.audio_url);
+            addChatMessage("coach", coachText, false, currentMode);
+            
+            let currentActiveMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+            if (currentMode === currentActiveMode) {
+                playAudio(coachText, data.audio_url);
+            } else {
+                setAvatarState("idle");
+                coachStatus.textContent = "Ready";
+            }
 
             // If the AI generated a plan, display it
             if (data.plan_data) {
                 planDataStore[currentMode] = data.plan_data;
-                renderPlan(data.plan_data);
-                setAvatarState("celebrate");
-                // Wait for the jump animation before waving while speaking
-                setTimeout(() => setAvatarState("speaking"), 2500);
+                if (currentMode === currentActiveMode) {
+                    renderPlan(data.plan_data);
+                    setAvatarState("celebrate");
+                    // Wait for the jump animation before waving while speaking
+                    setTimeout(() => setAvatarState("speaking"), 2500);
+                }
             }
         } else {
             throw new Error("API Error");
         }
     } catch (e) {
+        removeTypingIndicator();
         abortController = null;
         btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        btnSend.classList.remove("btn-stop");
 
         if (e.name === 'AbortError') {
             console.log('Request aborted by user');
@@ -462,7 +559,7 @@ btnSend.addEventListener("click", async () => {
         console.error(e);
         setAvatarState("error");
         coachStatus.textContent = "Connection error";
-        addChatMessage("coach", "Sorry, I couldn't connect to the server.");
+        addChatMessage("coach", "Sorry, I couldn't connect to the server.", false, currentMode);
         setTimeout(() => setAvatarState("idle"), 3000);
     }
 });
