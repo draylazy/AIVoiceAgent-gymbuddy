@@ -1,8 +1,8 @@
 import os
 import json
 import re
-from typing import List, Dict, Any
-from .schemas import WorkoutPlanData, WorkoutSessionSchema, ExerciseSchema
+from typing import List, Dict, Any, Union
+from .schemas import WorkoutPlanData, WorkoutSessionSchema, ExerciseSchema, MealPlanData, DailyMealPlanSchema, MealSchema
 from .seed_data import get_eligible_exercises, EXERCISE_CATALOG
 
 def load_env_file():
@@ -123,6 +123,23 @@ def _generate_mock_plan(user: Any, eligible_exercises: List[Dict[str, Any]]) -> 
     return WorkoutPlanData(
         sessions=sessions,
         general_advice="Stay well-hydrated, control your breathing, and maintain proper form over speed."
+    )
+
+def _generate_mock_meal_plan(user: Any) -> MealPlanData:
+    meals = [
+        MealSchema(id="m1", name="Grilled Chicken Salad", calories=400, protein=45, carbs=15, fat=10, notes="Use light dressing"),
+        MealSchema(id="m2", name="Protein Shake", calories=200, protein=30, carbs=10, fat=5, notes="Post-workout")
+    ]
+    return MealPlanData(
+        days=[DailyMealPlanSchema(
+            day=1,
+            breakfast=["Oatmeal", "Black coffee"],
+            meals=meals,
+            snacks=["Almonds"],
+            total_calories=1800,
+            explanation="High protein focus for muscle recovery."
+        )],
+        general_advice="Drink at least 3 liters of water today."
     )
 
 def search_online_fitness(query: str, max_results: int = 2) -> str:
@@ -310,7 +327,7 @@ def _detect_equipment_in_text(text: str) -> List[str]:
         equipment.append("Kettlebell")
     return equipment
 
-def _conversational_offline_engine(chat_history: List[Dict[str, str]]) -> Dict[str, Any]:
+def _conversational_offline_engine(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
     last_message = chat_history[-1]["content"].strip()
     msg_lower = last_message.lower()
     
@@ -332,12 +349,19 @@ def _conversational_offline_engine(chat_history: List[Dict[str, str]]) -> Dict[s
         if not eligible:
             eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
             
-        plan = _generate_mock_plan(None, eligible)
-        equip_str = ", ".join(detected_equip) if detected_equip else "bodyweight only"
-        return {
-            "text": f"I've created a personalized workout plan for you using {equip_str}! Check out your routine and coaching tips on the right. Let's get moving!",
-            "plan_data": plan
-        }
+        if mode == "nutrition":
+            plan = _generate_mock_meal_plan(None)
+            return {
+                "text": "I've created a personalized meal plan for you! Check out your nutrition guide on the right. Bon appétit!",
+                "plan_data": plan
+            }
+        else:
+            plan = _generate_mock_plan(None, eligible)
+            equip_str = ", ".join(detected_equip) if detected_equip else "bodyweight only"
+            return {
+                "text": f"I've created a personalized workout plan for you using {equip_str}! Check out your routine and coaching tips on the right. Let's get moving!",
+                "plan_data": plan
+            }
         
     new_equip = _detect_equipment_in_text(msg_lower)
     if new_equip or any(q in msg_lower for q in ["no equipment", "bodyweight", "nothing", "home"]):
@@ -382,7 +406,7 @@ def _conversational_offline_engine(chat_history: List[Dict[str, str]]) -> Dict[s
         "text": f"I heard you say '{clean_msg}'. As your fitness coach, I'm here to build routines tailored to your equipment and goals. What equipment do you have ready, or what exercises would you like to do?"
     }
 
-def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) -> WorkoutPlanData:
+def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Union[WorkoutPlanData, MealPlanData]:
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     history_str = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history])
     user_msgs = [msg['content'] for msg in chat_history if msg['role'] == 'user']
@@ -390,53 +414,102 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) ->
     
     online_findings = search_online_fitness(search_query, max_results=2)
     
-    prompt = f"""
-    You are FitBuddy, an expert AI fitness coach with live internet search capabilities.
-    Based on our conversation history and live online research below, dynamically generate a structured workout session plan.
-    Tailor exercises to the user's requested muscle groups, equipment, and fitness level.
-    
-    Conversation History:
-    {history_str}
-    
-    Live Online Research Insights:
-    {online_findings if online_findings else "Utilize current exercise science and optimal hypertrophy/strength protocols."}
-    
-    CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
-    
-    Do NOT restrict yourself to any static list. Select the best, scientifically validated exercises from the web for the user's equipment and targets.
-    
-    Respond STRICTLY in valid JSON matching this schema:
-    {{
-      "sessions": [
+    if mode == "nutrition":
+        prompt = f"""
+        You are MealBuddy, an expert AI nutrition coach.
+        Based on our conversation history and live online research below, dynamically generate a structured daily meal plan.
+        
+        Conversation History:
+        {history_str}
+        
+        Live Online Research Insights:
+        {online_findings if online_findings else "Utilize current nutritional science."}
+        
+        CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different meals compared to what was discussed previously in the chat history. Provide a novel variation!
+        
+        PLAN LENGTH RULES:
+        1. If the user asks for a general meal plan (e.g., "give me a meal plan", "create a diet for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 days in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. Under no circumstances can you output more than 7 days.
+        2. If the user asks for a single day (e.g., "what should I eat today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 day in the array).
+        3. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
+        
+        Respond STRICTLY in valid JSON matching this schema:
         {{
-          "day": 1,
-          "warmup": ["Dynamic arm circles (30s)", "Light cardio (2 mins)"],
-          "exercises": [
+          "days": [
             {{
-              "id": "ex_1",
-              "name": "Exercise Name",
-              "sets": 3,
-              "reps": "10-12",
-              "duration_seconds": null,
-              "rest_seconds": 60,
-              "notes": "Coaching form tip"
+              "day": 1,
+              "breakfast": ["Oatmeal with berries (300 kcal)", "Black coffee"],
+              "meals": [
+                {{
+                  "id": "meal_1",
+                  "name": "Grilled Chicken Salad",
+                  "calories": 450,
+                  "protein": 40,
+                  "carbs": 20,
+                  "fat": 15,
+                  "notes": "Use light dressing"
+                }}
+              ],
+              "snacks": ["Apple and almonds"],
+              "total_calories": 2000,
+              "explanation": "High protein focus"
             }}
           ],
-          "cooldown": ["Static stretches (2 mins)"],
-          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
-          "explanation": "Targeted focus and rationale for this session"
+          "general_advice": "Drink lots of water"
         }}
-      ],
-      "general_advice": "Key coaching tip for consistency and safety"
-    }}
-    """
+        """
+    else:
+        prompt = f"""
+        You are FitBuddy, an expert AI fitness coach with live internet search capabilities.
+        Based on our conversation history and live online research below, dynamically generate a structured workout session plan.
+        Tailor exercises to the user's requested muscle groups, equipment, and fitness level.
+        
+        Conversation History:
+        {history_str}
+        
+        Live Online Research Insights:
+        {online_findings if online_findings else "Utilize current exercise science and optimal hypertrophy/strength protocols."}
+        
+        CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
+        
+        PLAN LENGTH RULES:
+        1. If the user asks for a general plan (e.g., "give me a workout plan", "create a routine for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 sessions in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. For rest days, include a session with explanation "Rest Day" and empty exercise lists. Under no circumstances can you output more than 7 days.
+        2. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 session in the array).
+        3. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+
+        Do NOT restrict yourself to any static list. Select the best, scientifically validated exercises from the web for the user's equipment and targets.
+        
+        Respond STRICTLY in valid JSON matching this schema:
+        {{
+          "sessions": [
+            {{
+              "day": 1,
+              "warmup": ["Dynamic arm circles (30s)", "Light cardio (2 mins)"],
+              "exercises": [
+                {{
+                  "id": "ex_1",
+                  "name": "Exercise Name",
+                  "sets": 3,
+                  "reps": "10-12",
+                  "duration_seconds": null,
+                  "rest_seconds": 60,
+                  "notes": "Coaching form tip"
+                }}
+              ],
+              "cooldown": ["Static stretches (2 mins)"],
+              "estimated_time_minutes": 45,
+              "explanation": "Chest & Triceps"
+            }}
+          ],
+          "general_advice": "Key coaching tip for consistency and safety"
+        }}
+        """
     
     completion = _groq_call_with_fallback(
         client,
         [{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         temperature=0.7,
-        max_tokens=1500
+        max_tokens=4000
     )
         
     raw = completion.choices[0].message.content.strip()
@@ -446,50 +519,99 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) ->
     elif "plan" in data and isinstance(data["plan"], dict):
         data = data["plan"]
         
-    return WorkoutPlanData(**data)
+    return MealPlanData(**data) if mode == "nutrition" else WorkoutPlanData(**data)
 
-def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) -> WorkoutPlanData:
+def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Union[WorkoutPlanData, MealPlanData]:
     model = get_gemini_model()
     history_str = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history])
     user_msgs = [msg['content'] for msg in chat_history if msg['role'] == 'user']
     search_query = user_msgs[-1] if user_msgs else "best workout routine"
     online_findings = search_online_fitness(search_query, max_results=2)
     
-    prompt = f"""
-    You are FitBuddy, an expert AI fitness coach with live internet access.
-    Based on our conversation history and online research below, dynamically generate a structured workout session plan in JSON format.
-    
-    Conversation History:
-    {history_str}
-    
-    Live Online Research Insights:
-    {online_findings if online_findings else "Utilize evidence-based fitness science."}
-    
-    Respond STRICTLY in valid JSON matching this schema:
-    {{
-      "sessions": [
+    if mode == "nutrition":
+        prompt = f"""
+        You are MealBuddy, an expert AI nutrition coach.
+        Based on our conversation history and online research below, dynamically generate a structured daily meal plan in JSON format.
+        
+        Conversation History:
+        {history_str}
+        
+        Live Online Research Insights:
+        {online_findings if online_findings else "Utilize current nutritional science."}
+        
+        PLAN LENGTH RULES:
+        1. If the user asks for a general meal plan (e.g., "give me a meal plan", "create a diet for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 days in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. Under no circumstances can you output more than 7 days.
+        2. If the user asks for a single day (e.g., "what should I eat today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 day in the array).
+        3. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
+        
+        Respond STRICTLY in valid JSON matching this schema:
         {{
-          "day": 1,
-          "warmup": ["string"],
-          "exercises": [
+          "days": [
             {{
-              "id": "ex_1",
-              "name": "Exercise Name",
-              "sets": 3,
-              "reps": "10-12",
-              "duration_seconds": null,
-              "rest_seconds": 60,
-              "notes": "Form tip"
+              "day": 1,
+              "breakfast": ["Oatmeal with berries (300 kcal)", "Black coffee"],
+              "meals": [
+                {{
+                  "id": "meal_1",
+                  "name": "Grilled Chicken Salad",
+                  "calories": 450,
+                  "protein": 40,
+                  "carbs": 20,
+                  "fat": 15,
+                  "notes": "Use light dressing"
+                }}
+              ],
+              "snacks": ["Apple and almonds"],
+              "total_calories": 2000,
+              "explanation": "High protein focus"
             }}
           ],
-          "cooldown": ["string"],
-          "estimated_time_minutes": 45, // MUST accurately calculate total time based on sets, reps, rests, warmup, and cooldown
-          "explanation": "Targeted focus for this session"
+          "general_advice": "Drink lots of water"
         }}
-      ],
-      "general_advice": "Key coaching tip"
-    }}
-    """
+        """
+    else:
+        prompt = f"""
+        You are FitBuddy, an expert AI fitness coach with live internet access.
+        Based on our conversation history and online research below, dynamically generate a structured workout session plan in JSON format.
+        
+        Conversation History:
+        {history_str}
+        
+        Live Online Research Insights:
+        {online_findings if online_findings else "Utilize evidence-based fitness science."}
+        
+        CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
+        
+        PLAN LENGTH RULES:
+        1. If the user asks for a general plan (e.g., "give me a workout plan", "create a routine for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 sessions in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. For rest days, include a session with explanation "Rest Day" and empty exercise lists. Under no circumstances can you output more than 7 days.
+        2. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 session in the array).
+        3. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+        
+        Respond STRICTLY in valid JSON matching this schema:
+        {{
+          "sessions": [
+            {{
+              "day": 1,
+              "warmup": ["string"],
+              "exercises": [
+                {{
+                  "id": "ex_1",
+                  "name": "Exercise Name",
+                  "sets": 3,
+                  "reps": "10-12",
+                  "duration_seconds": null,
+                  "rest_seconds": 60,
+                  "notes": "Form tip"
+                }}
+              ],
+              "cooldown": ["string"],
+              "estimated_time_minutes": 45,
+              "explanation": "Chest & Triceps"
+            }}
+          ],
+          "general_advice": "Key coaching tip"
+        }}
+        """
     
     response = model.generate_content(prompt)
     text = response.text.strip()
@@ -504,7 +626,7 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]]) 
         data = data["workout_plan"]
     elif "plan" in data and isinstance(data["plan"], dict):
         data = data["plan"]
-    return WorkoutPlanData(**data)
+    return MealPlanData(**data) if mode == "nutrition" else WorkoutPlanData(**data)
 
 def _get_system_prompt_for_mode(mode: str) -> str:
     if mode == "nutrition":
@@ -543,8 +665,9 @@ def _get_voice_rules_for_mode(mode: str) -> str:
 Voice rules (replies will be read aloud via text-to-speech):
 - Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
 - Never use bullet points, markdown, or lists in your spoken reply.
-- If a user mentions a specific food or diet (e.g., keto, chicken breast), give a KEY nutritional tip immediately.
-- If a user says what their goal is, give 2-3 top food choices for it.
+- If a user mentions a specific food or diet, give a KEY nutritional tip immediately.
+- If a user asks for a meal plan or daily meals, DO NOT list out all the meals, calories, or recipes in your spoken response. You MUST use the visual plan interface instead!
+- If a user asks for a meal plan exceeding 7 days, you MUST politely inform them that you can only generate a maximum of a 7-day plan, and then proceed to generate a 7-day plan for them.
 
 CRITICAL SYSTEM INSTRUCTION regarding Meal Plans:
 You have a connected app interface that can display a meal plan visually to the user.
@@ -553,11 +676,12 @@ Whenever the user asks you to:
 2. Make a diet routine
 3. Change their current meal plan
 4. Give them a new day of meals
+5. Or any variation of asking for a list of what to eat.
 
-You MUST, WITHOUT FAIL, append this exact string to the very end of your response:
+You MUST NOT speak the meal plan. Instead, you MUST, WITHOUT FAIL, append this exact string to the very end of your response:
 [GENERATE_PLAN]
 
-Example: "Let's switch gears and build some serious muscle with a high-protein diet! I've updated your meal plan on the right. [GENERATE_PLAN]"
+Example: 'Let\'s switch gears and build some serious muscle with a high-protein diet! Click the "Your Meal Plan" button to view it. [GENERATE_PLAN]'
 
 Do NOT add the tag for simple food tips or single recipe questions.
 Never say "I heard you say..." — respond naturally as a chef would."""
@@ -567,7 +691,8 @@ Voice rules (replies will be read aloud via text-to-speech):
 - Keep responses to 1-3 focused sentences. Be punchy, clear, energetic.
 - Never use bullet points, markdown, or lists in your spoken reply.
 - If a user mentions a specific exercise (e.g., bench press, squat), give a KEY form cue immediately.
-- If a user says what muscle they want to train, give 2-3 top exercises for it WITH form tips.
+- If a user asks for a workout plan or routine, DO NOT list the exercises, sets, or reps in your spoken response. You MUST use the visual plan interface instead!
+- If a user asks for a workout plan exceeding 7 days, you MUST politely inform them that you can only generate a maximum of a 7-day plan, and then proceed to generate a 7-day plan for them.
 
 CRITICAL SYSTEM INSTRUCTION regarding Workout Plans:
 You have a connected app interface that can display a workout plan visually to the user.
@@ -575,12 +700,13 @@ Whenever the user asks you to:
 1. Create a workout plan
 2. Make a routine
 3. Change their current workout plan
-4. Give them a new day (e.g. "give me a leg day")
+4. Give them a new day (e.g. "give me a leg day", "give me an arm plan")
+5. Or any variation of asking for a list of exercises to do.
 
-You MUST, WITHOUT FAIL, append this exact string to the very end of your response:
+You MUST NOT speak the routine. Instead, you MUST, WITHOUT FAIL, append this exact string to the very end of your response:
 [GENERATE_PLAN]
 
-Example: "Let's switch gears and build some serious lower body strength! I've updated your plan on the right. [GENERATE_PLAN]"
+Example: 'Sure thing, here is a David Laid style 3-day arm split! Click the "Your Workout" button to view it. [GENERATE_PLAN]'
 
 Do NOT add the tag for simple form tips or single exercise questions.
 Never say "I heard you say..." — respond naturally as a coach would."""
@@ -612,20 +738,27 @@ def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness
     if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
         if not clean_text:
-            clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
+            if mode == 'nutrition':
+                clean_text = 'I\'ve created a new personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
+            else:
+                clean_text = 'I\'ve created a new personalized workout plan for you! Click the "Your Workout" button to view it.'
             
         try:
-            plan = _generate_groq_dynamic_plan_from_chat(chat_history)
+            plan = _generate_groq_dynamic_plan_from_chat(chat_history, mode)
             return {"text": clean_text, "plan_data": plan}
         except Exception as e:
             print(f"Error dynamically generating Groq plan: {e}")
             all_user_text = " ".join([m["content"] for m in chat_history if m["role"] == "user"])
             detected_equip = _detect_equipment_in_text(all_user_text)
             eligible = get_eligible_exercises(user_equipment=detected_equip)
-            if not eligible:
-                eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
-            plan = _generate_mock_plan(None, eligible)
-            return {"text": clean_text, "plan_data": plan}
+            if mode == 'nutrition':
+                plan = _generate_mock_meal_plan(None)
+                return {"text": clean_text, "plan_data": plan}
+            else:
+                if not eligible:
+                    eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
+                plan = _generate_mock_plan(None, eligible)
+                return {"text": clean_text, "plan_data": plan}
         
     return {"text": text}
 
@@ -656,20 +789,27 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitne
     if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
         if not clean_text:
-            clean_text = "I've created a new personalized workout plan for you! Check it out on the right."
+            if mode == 'nutrition':
+                clean_text = 'I\'ve created a new personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
+            else:
+                clean_text = 'I\'ve created a new personalized workout plan for you! Click the "Your Workout" button to view it.'
             
         try:
-            plan = _generate_gemini_dynamic_plan_from_chat(chat_history)
+            plan = _generate_gemini_dynamic_plan_from_chat(chat_history, mode)
             return {"text": clean_text, "plan_data": plan}
         except Exception as e:
             print(f"Error dynamically generating Gemini plan: {e}")
             all_user_text = " ".join([m["content"] for m in chat_history if m["role"] == "user"])
             detected_equip = _detect_equipment_in_text(all_user_text)
             eligible = get_eligible_exercises(user_equipment=detected_equip)
-            if not eligible:
-                eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
-            plan = _generate_mock_plan(None, eligible)
-            return {"text": clean_text, "plan_data": plan}
+            if mode == 'nutrition':
+                plan = _generate_mock_meal_plan(None)
+                return {"text": clean_text, "plan_data": plan}
+            else:
+                if not eligible:
+                    eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
+                plan = _generate_mock_plan(None, eligible)
+                return {"text": clean_text, "plan_data": plan}
         
     return {"text": text}
 
@@ -681,13 +821,13 @@ def generate_conversational_response(chat_history: List[Dict[str, str]], mode: s
             return _generate_groq_chat(chat_history, mode)
         except Exception as e:
             print(f"Groq chat error: {e}. Falling back to conversational dialogue engine.")
-            return _conversational_offline_engine(chat_history)
+            return _conversational_offline_engine(chat_history, mode)
             
     if provider == "gemini" and GENAI_AVAILABLE:
         try:
             return _generate_gemini_chat(chat_history, mode)
         except Exception as e:
             print(f"Gemini live error: {e}. Falling back to conversational dialogue engine.")
-            return _conversational_offline_engine(chat_history)
+            return _conversational_offline_engine(chat_history, mode)
             
-    return _conversational_offline_engine(chat_history)
+    return _conversational_offline_engine(chat_history, mode)

@@ -435,7 +435,7 @@ btnSend.addEventListener("click", async () => {
 });
 
 function renderPlan(planData) {
-    if (!planData || !planData.sessions || planData.sessions.length === 0) {
+    if (!planData) {
         planDisplay.innerHTML = `
             <p style="color: var(--text-secondary); text-align: center; margin-top: 2rem;">
                 Tell me your goals, and I'll create a plan for you!
@@ -443,71 +443,217 @@ function renderPlan(planData) {
         return;
     }
 
-    const session = planData.sessions[0]; // just show the first session for now
+    if (planData.days) {
+        renderMealPlan(planData);
+        return;
+    }
 
-    // Title
-    let html = `
-        <h3>${session.explanation || 'Targeted Workout'}</h3>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
-            Estimated time: ${session.estimated_time_minutes || 30} min
-        </p>
-        <div class="exercises-list">
-    `;
+    if (!planData.sessions || planData.sessions.length === 0) {
+        planDisplay.innerHTML = `
+            <p style="color: var(--text-secondary); text-align: center; margin-top: 2rem;">
+                Tell me your goals, and I'll create a plan for you!
+            </p>`;
+        return;
+    }
 
-    let exNum = 1;
+    const renderSessionContent = (session, container) => {
+        let html = `
+            <h3>${session.explanation || 'Targeted Workout'}</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                Estimated time: ${session.estimated_time_minutes || 30} min
+            </p>
+            <div class="exercises-list">
+        `;
 
-    // Warmup
-    const warmupText = Array.isArray(session.warmup) ? session.warmup.join(", ") : (session.warmup || "Dynamic stretching");
-    html += `
-        <div class="exercise-row">
-            <span class="ex-number">${exNum++}</span>
-            <div class="ex-details">
-                <strong>Warm-up</strong>
-                <span>${warmupText}</span>
-            </div>
-        </div>
-    `;
+        let exNum = 1;
 
-    // Exercises
-    (session.exercises || []).forEach(ex => {
-        const details = [
-            ex.sets ? `${ex.sets} sets` : '',
-            ex.reps ? `${ex.reps} reps` : '',
-            ex.duration_seconds ? `${ex.duration_seconds}s` : ''
-        ].filter(Boolean).join(' × ');
-
+        // Warmup
+        const warmupText = Array.isArray(session.warmup) ? session.warmup.join(", ") : (session.warmup || "Dynamic stretching");
         html += `
             <div class="exercise-row">
                 <span class="ex-number">${exNum++}</span>
                 <div class="ex-details">
-                    <strong>${ex.name}</strong>
-                    <span>${details || 'Follow coach instructions'}</span>
-                    <span style="font-size: 0.75rem; display: block; margin-top: 4px;">Tip: ${ex.notes || 'Control the tempo'}</span>
+                    <strong>Warm-up</strong>
+                    <span>${warmupText}</span>
                 </div>
             </div>
         `;
-    });
 
-    // Cooldown
-    const cooldownText = Array.isArray(session.cooldown) ? session.cooldown.join(", ") : (session.cooldown || "Static stretches");
-    html += `
-        <div class="exercise-row">
-            <span class="ex-number">${exNum++}</span>
-            <div class="ex-details">
-                <strong>Cooldown</strong>
-                <span>${cooldownText}</span>
+        // Exercises
+        (session.exercises || []).forEach(ex => {
+            const details = [
+                ex.sets ? `${ex.sets} sets` : '',
+                ex.reps ? `${ex.reps} reps` : '',
+                ex.duration_seconds ? `${ex.duration_seconds}s` : ''
+            ].filter(Boolean).join(' × ');
+
+            html += `
+                <div class="exercise-row">
+                    <span class="ex-number">${exNum++}</span>
+                    <div class="ex-details">
+                        <strong>${ex.name}</strong>
+                        <span>${details || 'Follow coach instructions'}</span>
+                        <span style="font-size: 0.75rem; display: block; margin-top: 4px;">Tip: ${ex.notes || 'Control the tempo'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Cooldown
+        const cooldownText = Array.isArray(session.cooldown) ? session.cooldown.join(", ") : (session.cooldown || "Static stretches");
+        html += `
+            <div class="exercise-row">
+                <span class="ex-number">${exNum++}</span>
+                <div class="ex-details">
+                    <strong>Cooldown</strong>
+                    <span>${cooldownText}</span>
+                </div>
             </div>
-        </div>
-    `;
+        `;
 
-    html += `</div>`;
+        html += `</div>`;
 
-    const adviceText = Array.isArray(planData.general_advice) ? planData.general_advice.join(" ") : planData.general_advice;
-    if (adviceText) {
-        html += `<p style="margin-top: 1rem; font-size: 0.85rem; padding: 1rem; background: var(--accent-pale-green); border-radius: 12px;"><strong>Coach's Note:</strong> ${adviceText}</p>`;
+        const adviceText = Array.isArray(planData.general_advice) ? planData.general_advice.join(" ") : planData.general_advice;
+        if (adviceText) {
+            html += `<p style="margin-top: 1rem; font-size: 0.85rem; padding: 1rem; background: var(--accent-pale-green); border-radius: 12px;"><strong>Coach's Note:</strong> ${adviceText}</p>`;
+        }
+        
+        container.innerHTML = html;
+    };
+
+    if (planData.sessions.length > 1) {
+        let tabsHTML = `<div class="plan-tabs" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.5rem;">`;
+        planData.sessions.forEach((sess, idx) => {
+            // Use explanation as the muscle target for the button
+            const target = sess.explanation ? ` - ${sess.explanation}` : '';
+            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: nowrap; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${sess.day}${target}</button>`;
+        });
+        tabsHTML += `</div><div id="session-display-area"></div>`;
+        planDisplay.innerHTML = tabsHTML;
+
+        const displayArea = document.getElementById('session-display-area');
+        renderSessionContent(planData.sessions[0], displayArea);
+
+        // Add event listeners
+        const tabBtns = planDisplay.querySelectorAll('.plan-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                renderSessionContent(planData.sessions[idx], displayArea);
+                tabBtns.forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-primary)';
+                });
+                e.target.style.background = 'var(--accent-dark-green)';
+                e.target.style.color = '#fff';
+            });
+        });
+    } else {
+        renderSessionContent(planData.sessions[0], planDisplay);
+    }
+}
+
+function renderMealPlan(planData) {
+    if (!planData || !planData.days || planData.days.length === 0) {
+        planDisplay.innerHTML = `
+            <p style="color: var(--text-secondary); text-align: center; margin-top: 2rem;">
+                Tell me your dietary goals, and I'll create a meal plan for you!
+            </p>`;
+        return;
     }
 
-    planDisplay.innerHTML = html;
+    const renderDayContent = (day, container) => {
+        let html = `
+            <h3>${day.explanation || 'Daily Nutrition'}</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                Target calories: ${day.total_calories || 2000} kcal
+            </p>
+            <div class="exercises-list">
+        `;
+
+        let exNum = 1;
+
+        const breakfastText = Array.isArray(day.breakfast) ? day.breakfast.join(", ") : (day.breakfast || "Standard breakfast");
+        html += `
+            <div class="exercise-row">
+                <span class="ex-number">${exNum++}</span>
+                <div class="ex-details">
+                    <strong>Breakfast</strong>
+                    <span>${breakfastText}</span>
+                </div>
+            </div>
+        `;
+
+        (day.meals || []).forEach(meal => {
+            const details = [
+                meal.calories ? `${meal.calories} kcal` : '',
+                meal.protein ? `${meal.protein}g P` : '',
+                meal.carbs ? `${meal.carbs}g C` : '',
+                meal.fat ? `${meal.fat}g F` : ''
+            ].filter(Boolean).join(' | ');
+
+            html += `
+                <div class="exercise-row">
+                    <span class="ex-number">${exNum++}</span>
+                    <div class="ex-details">
+                        <strong>${meal.name}</strong>
+                        <span>${details || 'Follow chef instructions'}</span>
+                        <span style="font-size: 0.75rem; display: block; margin-top: 4px;">Tip: ${meal.notes || 'Enjoy your meal'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        const snacksText = Array.isArray(day.snacks) ? day.snacks.join(", ") : (day.snacks || "Healthy snacks");
+        html += `
+            <div class="exercise-row">
+                <span class="ex-number">${exNum++}</span>
+                <div class="ex-details">
+                    <strong>Snacks / Dinner</strong>
+                    <span>${snacksText}</span>
+                </div>
+            </div>
+        `;
+
+        html += `</div>`;
+
+        const adviceText = Array.isArray(planData.general_advice) ? planData.general_advice.join(" ") : planData.general_advice;
+        if (adviceText) {
+            html += `<p style="margin-top: 1rem; font-size: 0.85rem; padding: 1rem; background: var(--accent-pale-green); border-radius: 12px;"><strong>Chef's Note:</strong> ${adviceText}</p>`;
+        }
+
+        container.innerHTML = html;
+    };
+
+    if (planData.days.length > 1) {
+        let tabsHTML = `<div class="plan-tabs" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.5rem;">`;
+        planData.days.forEach((day, idx) => {
+            const target = day.explanation ? ` - ${day.explanation}` : '';
+            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: nowrap; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${day.day}${target}</button>`;
+        });
+        tabsHTML += `</div><div id="meal-display-area"></div>`;
+        planDisplay.innerHTML = tabsHTML;
+
+        const displayArea = document.getElementById('meal-display-area');
+        renderDayContent(planData.days[0], displayArea);
+
+        const tabBtns = planDisplay.querySelectorAll('.plan-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabBtns.forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-primary)';
+                });
+                e.target.style.background = 'var(--accent-dark-green)';
+                e.target.style.color = '#fff';
+
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                renderDayContent(planData.days[idx], displayArea);
+            });
+        });
+    } else {
+        renderDayContent(planData.days[0], planDisplay);
+    }
 }
 
 // Initial greeting and Theme Setup
@@ -605,8 +751,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (target === 'mealbuddy.html') {
                 document.body.classList.add('mealbuddy-page');
-                const logo = document.querySelector('.logo h1');
-                if (logo) logo.textContent = "MealBuddy";
+                const logoImg = document.querySelector('.logo img');
+                if (logoImg) {
+                    logoImg.src = "mealbuddy-logo.png";
+                    logoImg.alt = "MealBuddy Logo";
+                }
                 if (planTitle) planTitle.textContent = "Your meal plan";
                 if (planIndicatorText) planIndicatorText.textContent = "Calorie-Aware";
 
@@ -622,8 +771,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 renderPlan(planDataStore.nutrition);
             } else {
                 document.body.classList.remove('mealbuddy-page');
-                const logo = document.querySelector('.logo h1');
-                if (logo) logo.textContent = "FitBuddy";
+                const logoImg = document.querySelector('.logo img');
+                if (logoImg) {
+                    logoImg.src = "fitbuddy-logo.png";
+                    logoImg.alt = "FitBuddy Logo";
+                }
                 if (planTitle) planTitle.textContent = "Your Workout";
                 if (planIndicatorText) planIndicatorText.textContent = "Equipment-Aware";
 

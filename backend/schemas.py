@@ -58,6 +58,27 @@ class WorkoutPlanData(BaseModel):
     sessions: List[WorkoutSessionSchema]
     general_advice: Union[str, List[str]] = "Focus on form, hydration, and steady progress."
 
+class MealSchema(BaseModel):
+    id: str = "meal"
+    name: str
+    calories: Optional[Union[int, str]] = None
+    protein: Optional[Union[int, str]] = None
+    carbs: Optional[Union[int, str]] = None
+    fat: Optional[Union[int, str]] = None
+    notes: Optional[str] = None
+
+class DailyMealPlanSchema(BaseModel):
+    day: Union[int, str] = 1
+    breakfast: Union[List[str], str] = Field(default_factory=list)
+    meals: List[MealSchema]
+    snacks: Union[List[str], str] = Field(default_factory=list)
+    total_calories: Union[int, str] = 2000
+    explanation: str = "Personalized daily meal plan"
+
+class MealPlanData(BaseModel):
+    days: List[DailyMealPlanSchema]
+    general_advice: Union[str, List[str]] = "Focus on hydration and balanced macros."
+
 class ChatMessage(BaseModel):
     role: str # "user" or "coach"
     content: str
@@ -70,4 +91,4 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     audio_url: Optional[str] = None
-    plan_data: Optional[WorkoutPlanData] = None
+    plan_data: Optional[Union[WorkoutPlanData, MealPlanData]] = None
