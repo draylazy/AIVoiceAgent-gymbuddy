@@ -1087,18 +1087,18 @@ body.dark-theme .nav-bar {
 .toast-notification.error {
     border-left: 4px solid #e74c3c;
 }
-/ *  
- N o t i f i c a t i o n  
- D o t  
- P u l s e  
- A n i m a t i o n  
- * /  
- p u l s e N o t i f  
-   > >   f r o n t e n d \ s t y l e . c s s  
- e c h o           0 %   {   t r a n s f o r m :   s c a l e ( 0 . 9 5 ) ;   b o x - s h a d o w :   0   0   0   0   r g b a ( 2 3 1 ,   7 6 ,   6 0 ,   0 . 7 ) ;   }   > >   f r o n t e n d \ s t y l e . c s s  
- e c h o           7 0 %   {   t r a n s f o r m :   s c a l e ( 1 ) ;   b o x - s h a d o w :   0   0   0   6 p x   r g b a ( 2 3 1 ,   7 6 ,   6 0 ,   0 ) ;   }   > >   f r o n t e n d \ s t y l e . c s s  
- e c h o           1 0 0 %   {   t r a n s f o r m :   s c a l e ( 0 . 9 5 ) ;   b o x - s h a d o w :   0   0   0   0   r g b a ( 2 3 1 ,   7 6 ,   6 0 ,   0 ) ;   }   > >   f r o n t e n d \ s t y l e . c s s  
- e c h o    
- . p u l s e - n o t i f  
-   a n i m a t i o n :   p u l s e N o t i f   2 s   i n f i n i t e ;    
- 
+/* Notification Dot Pulse Animation */
+@keyframes pulseNotif {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+.pulse-notif { animation: pulseNotif 2s infinite; }
+
+/* Mobile Only App Mode Switch */
+.mobile-only-switch { display: none; }
+@media (max-width: 767px) {
+    .mobile-only-switch { display: flex; flex-direction: column; position: absolute; top: 40%; right: 15px; transform: translateY(-50%); z-index: 90; background: var(--bg-card); backdrop-filter: blur(12px); border-radius: 40px; padding: 4px; gap: 4px; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .mobile-only-switch a { padding: 6px; border-radius: 50%; color: var(--text-tertiary); display: flex; align-items: center; justify-content: center; }
+    .mobile-only-switch a.active { background: var(--accent-dark-green); color: white; }
+}
