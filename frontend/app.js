@@ -126,6 +126,10 @@ if (SpeechRecognition) {
 
     recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
+        if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+            showToast("Microphone not detected or permission denied. Please check your microphone settings.", "error");
+        }
+        
         if (tempUserMsgWrapper) {
             tempUserMsgWrapper.remove();
             tempUserMsgWrapper = null;
@@ -461,7 +465,10 @@ btnMic.addEventListener("click", () => {
             recognition.start();
         } catch (e) {
             console.error(e);
+            showToast("Microphone could not be started. Please check your settings.", "error");
         }
+    } else if (!recognition) {
+        showToast("Speech recognition is not supported in this browser.", "error");
     }
 });
 
@@ -535,6 +542,18 @@ btnSend.addEventListener("click", async () => {
             // If the AI generated a plan, display it
             if (data.plan_data) {
                 planDataStore[currentMode] = data.plan_data;
+                
+                // Show notification dot for new plan
+                const desktopNotif = document.getElementById("desktop-plan-notif");
+                const mobileNotif = document.getElementById("mobile-plan-notif");
+                
+                // Only show dot if the plan sheet is not currently open
+                const planSheet = document.getElementById('plan-sheet');
+                if (planSheet && !planSheet.classList.contains('open')) {
+                    if (desktopNotif) desktopNotif.style.display = "block";
+                    if (mobileNotif) mobileNotif.style.display = "block";
+                }
+                
                 if (currentMode === currentActiveMode) {
                     renderPlan(data.plan_data);
                     setAvatarState("celebrate");
@@ -829,6 +848,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (desktopBtnOpenPlan) {
         desktopBtnOpenPlan.addEventListener('click', () => {
+            const desktopNotif = document.getElementById("desktop-plan-notif");
+            const mobileNotif = document.getElementById("mobile-plan-notif");
+            if (desktopNotif) desktopNotif.style.display = "none";
+            if (mobileNotif) mobileNotif.style.display = "none";
+
             closeAllSheets();
             planSheet.classList.add('open');
             sheetBackdrop.classList.add('active');
@@ -845,6 +869,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (btnOpenPlan) {
         btnOpenPlan.addEventListener('click', () => {
+            const desktopNotif = document.getElementById("desktop-plan-notif");
+            const mobileNotif = document.getElementById("mobile-plan-notif");
+            if (desktopNotif) desktopNotif.style.display = "none";
+            if (mobileNotif) mobileNotif.style.display = "none";
+
             closeAllSheets();
             planSheet.classList.add('open');
             sheetBackdrop.classList.add('active');
@@ -923,3 +952,42 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function showToast(message, type = "error") {
+    // Remove existing toast if present
+    const existing = document.querySelector('.toast-notification');
+    if (existing) {
+        existing.remove();
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast-notification ${type}`;
+    
+    const icon = document.createElement("div");
+    icon.className = "toast-icon";
+    if (type === "error") {
+        icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    }
+    
+    const text = document.createElement("div");
+    text.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+    
+    // Remove after 4 seconds
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 400); // Wait for transition
+    }, 4000);
+}

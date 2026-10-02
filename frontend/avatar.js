@@ -191,8 +191,11 @@ try {
 
         if (currentMode === 'nutrition') {
             rhino.update(t, Math.min(clock.getDelta() || 0.016, 0.05), motion);
-            // Even if rhino doesn't lip-sync, we sync head movement to mouse
-            rhino.chef.rotation.y += (lookX * motion * 0.5); 
+            // Even if rhino doesn't lip-sync, we sync head movement to mouse like the bull
+            if (rhino.head) {
+                rhino.head.rotation.y += (lookX * motion - rhino.head.rotation.y) * .09;
+                rhino.head.rotation.x += (lookY * motion - rhino.head.rotation.x) * .09;
+            }
             renderer.render(scene, camera);
             return;
         }
