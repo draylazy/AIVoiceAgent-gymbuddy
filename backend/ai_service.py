@@ -84,104 +84,62 @@ def generate_workout_plan(user: Any, equipment: Any, eligible_exercises: List[Di
             
     return _generate_mock_plan(user, eligible_exercises)
 
-def _detect_requested_days(user_text: str, default_days: int = 3) -> int:
-    import re
-    match = re.search(r'(\d+)\s*[-_]?\s*(?:day|session)', user_text.lower())
-    if match:
-        try:
-            val = int(match.group(1))
-            return max(1, min(7, val))
-        except ValueError:
-            pass
-    word_map = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7}
-    for word, val in word_map.items():
-        if f"{word} day" in user_text.lower() or f"{word}-day" in user_text.lower():
-            return val
-    return default_days
-
-def _generate_mock_plan(user: Any, eligible_exercises: List[Dict[str, Any]], chat_history: List[Dict[str, str]] = None) -> WorkoutPlanData:
+def _generate_mock_plan(user: Any, eligible_exercises: List[Dict[str, Any]]) -> WorkoutPlanData:
     import random
-    all_user_text = " ".join([m["content"] for m in chat_history if m.get("role") == "user"]) if chat_history else ""
-    target_days = _detect_requested_days(all_user_text, default_days=3)
-    
     sessions = []
-    num_exercises = min(4, max(1, len(eligible_exercises)))
+    num_exercises = min(4, len(eligible_exercises))
+    selected = random.sample(eligible_exercises, num_exercises)
     
-    focus_target = "Full-body"
-    if "leg" in all_user_text.lower():
-        focus_target = "Legs & Lower Body Focus"
-    elif "arm" in all_user_text.lower():
-        focus_target = "Arms & Upper Body Focus"
-    elif "chest" in all_user_text.lower():
-        focus_target = "Chest & Push Focus"
-    elif "back" in all_user_text.lower():
-        focus_target = "Back & Pull Focus"
-        
-    for day_num in range(1, target_days + 1):
-        selected = random.sample(eligible_exercises, num_exercises) if len(eligible_exercises) >= num_exercises else eligible_exercises
-        exercises = []
-        for ex in selected:
-            if ex.get("type") == "reps":
-                exercises.append(ExerciseSchema(
-                    id=ex["id"], 
-                    name=ex["name"], 
-                    sets=3, 
-                    reps=10, 
-                    rest_seconds=60, 
-                    notes=ex.get("instructions", "Focus on controlled form.")
-                ))
-            else:
-                exercises.append(ExerciseSchema(
-                    id=ex["id"], 
-                    name=ex["name"], 
-                    sets=3, 
-                    duration_seconds=30, 
-                    rest_seconds=30,
-                    notes=ex.get("instructions", "Breathe steadily throughout.")
-                ))
-                
-        sessions.append(WorkoutSessionSchema(
-            day=day_num,
-            warmup=["Arm circles (30s)", "High knees (30s)", "Torso twists (30s)"],
-            exercises=exercises,
-            cooldown=["Hamstring stretch", "Quad stretch", "Deep breathing (1 min)"],
-            estimated_time_minutes=25 + (day_num * 5),
-            explanation=f"Day {day_num} - {focus_target}"
-        ))
+    exercises = []
+    for ex in selected:
+        if ex.get("type") == "reps":
+            exercises.append(ExerciseSchema(
+                id=ex["id"], 
+                name=ex["name"], 
+                sets=3, 
+                reps=10, 
+                rest_seconds=60, 
+                notes=ex.get("instructions", "Focus on controlled form.")
+            ))
+        else:
+            exercises.append(ExerciseSchema(
+                id=ex["id"], 
+                name=ex["name"], 
+                sets=3, 
+                duration_seconds=30, 
+                rest_seconds=30,
+                notes=ex.get("instructions", "Breathe steadily throughout.")
+            ))
+            
+    sessions.append(WorkoutSessionSchema(
+        day=1,
+        warmup=["Arm circles (30s)", "High knees (30s)", "Torso twists (30s)"],
+        exercises=exercises,
+        cooldown=["Hamstring stretch", "Quad stretch", "Deep breathing (1 min)"],
+        estimated_time_minutes=25,
+        explanation="Full-body activation tailored to your available equipment and space."
+    ))
     
     return WorkoutPlanData(
         sessions=sessions,
         general_advice="Stay well-hydrated, control your breathing, and maintain proper form over speed."
     )
 
-def _generate_mock_meal_plan(user: Any, chat_history: List[Dict[str, str]] = None) -> MealPlanData:
-    all_user_text = " ".join([m["content"] for m in chat_history if m.get("role") == "user"]) if chat_history else ""
-    target_days = _detect_requested_days(all_user_text, default_days=3)
-    
-    focus_target = "High Protein & Balanced Nutrition"
-    if "keto" in all_user_text.lower() or "low carb" in all_user_text.lower():
-        focus_target = "Keto / Low-Carb Focus"
-    elif "vegan" in all_user_text.lower() or "vegetarian" in all_user_text.lower():
-        focus_target = "Plant-Based Nutrition"
-        
-    days = []
-    for day_num in range(1, target_days + 1):
-        meals = [
-            MealSchema(id=f"m{day_num}_1", name=f"Day {day_num} Grilled Chicken / Protein Bowl", calories=450, protein=45, carbs=20, fat=12, notes="Use light dressing"),
-            MealSchema(id=f"m{day_num}_2", name=f"Day {day_num} Recovery Protein Smoothie", calories=250, protein=30, carbs=15, fat=5, notes="Post-workout boost")
-        ]
-        days.append(DailyMealPlanSchema(
-            day=day_num,
-            breakfast=[f"Day {day_num} Oatmeal with berries", "Black coffee"],
-            meals=meals,
-            snacks=["Greek yogurt", "Almonds"],
-            total_calories=1900 + (day_num * 50),
-            explanation=f"Day {day_num} - {focus_target}"
-        ))
-
+def _generate_mock_meal_plan(user: Any) -> MealPlanData:
+    meals = [
+        MealSchema(id="m1", name="Grilled Chicken Salad", calories=400, protein=45, carbs=15, fat=10, notes="Use light dressing"),
+        MealSchema(id="m2", name="Protein Shake", calories=200, protein=30, carbs=10, fat=5, notes="Post-workout")
+    ]
     return MealPlanData(
-        days=days,
-        general_advice="Drink at least 3 liters of water daily and stay consistent."
+        days=[DailyMealPlanSchema(
+            day=1,
+            breakfast=["Oatmeal", "Black coffee"],
+            meals=meals,
+            snacks=["Almonds"],
+            total_calories=1800,
+            explanation="High protein focus for muscle recovery."
+        )],
+        general_advice="Drink at least 3 liters of water today."
     )
 
 def search_online_fitness(query: str, max_results: int = 2) -> str:
@@ -762,26 +720,6 @@ Do NOT add the tag for simple form tips or single exercise questions.
 Never say "I heard you say..." — respond naturally as a coach would."""
 
 
-def _should_generate_plan(chat_history: List[Dict[str, str]], ai_text: str, mode: str = "fitness") -> bool:
-    if "[GENERATE_PLAN]" in ai_text:
-        return True
-
-    user_msgs = [m["content"].lower() for m in chat_history if m.get("role") == "user"]
-    if not user_msgs:
-        return False
-
-    last_user_msg = user_msgs[-1]
-
-    plan_triggers = [
-        "plan", "routine", "workout", "diet", "meal", "change", "update", "modify",
-        "different", "harder", "easier", "split", "day", "days", "focus", "protein",
-        "carb", "calorie", "calories", "leg", "legs", "chest", "arm", "arms", "back", "push", "pull",
-        "shoulder", "shoulders", "abs", "core", "heavy", "light", "recipe", "meals", "exercises",
-        "give me", "create", "make", "build", "generate", "adjust", "switch", "instead", "add", "remove"
-    ]
-
-    return any(t in last_user_msg for t in plan_triggers)
-
 def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     
@@ -805,13 +743,13 @@ def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness
     completion = _groq_call_with_fallback(client, messages, temperature=0.75, max_tokens=300)
     text = completion.choices[0].message.content.strip()
     
-    if _should_generate_plan(chat_history, text, mode):
+    if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
-        if not clean_text or clean_text == text:
+        if not clean_text:
             if mode == 'nutrition':
-                clean_text = 'I\'ve updated your personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
+                clean_text = 'I\'ve created a new personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
             else:
-                clean_text = 'I\'ve updated your personalized workout plan for you! Click the "Your Workout" button to view it.'
+                clean_text = 'I\'ve created a new personalized workout plan for you! Click the "Your Workout" button to view it.'
             
         try:
             plan = _generate_groq_dynamic_plan_from_chat(chat_history, mode)
@@ -822,12 +760,12 @@ def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness
             detected_equip = _detect_equipment_in_text(all_user_text)
             eligible = get_eligible_exercises(user_equipment=detected_equip)
             if mode == 'nutrition':
-                plan = _generate_mock_meal_plan(None, chat_history)
+                plan = _generate_mock_meal_plan(None)
                 return {"text": clean_text, "plan_data": plan}
             else:
                 if not eligible:
                     eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
-                plan = _generate_mock_plan(None, eligible, chat_history)
+                plan = _generate_mock_plan(None, eligible)
                 return {"text": clean_text, "plan_data": plan}
         
     return {"text": text}
@@ -856,13 +794,13 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitne
     response = model.generate_content(prompt)
     text = response.text.strip()
     
-    if _should_generate_plan(chat_history, text, mode):
+    if "[GENERATE_PLAN]" in text:
         clean_text = text.replace("[GENERATE_PLAN]", "").strip()
-        if not clean_text or clean_text == text:
+        if not clean_text:
             if mode == 'nutrition':
-                clean_text = 'I\'ve updated your personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
+                clean_text = 'I\'ve created a new personalized meal plan for you! Click the "Your Meal Plan" button to view it.'
             else:
-                clean_text = 'I\'ve updated your personalized workout plan for you! Click the "Your Workout" button to view it.'
+                clean_text = 'I\'ve created a new personalized workout plan for you! Click the "Your Workout" button to view it.'
             
         try:
             plan = _generate_gemini_dynamic_plan_from_chat(chat_history, mode)
@@ -873,12 +811,12 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitne
             detected_equip = _detect_equipment_in_text(all_user_text)
             eligible = get_eligible_exercises(user_equipment=detected_equip)
             if mode == 'nutrition':
-                plan = _generate_mock_meal_plan(None, chat_history)
+                plan = _generate_mock_meal_plan(None)
                 return {"text": clean_text, "plan_data": plan}
             else:
                 if not eligible:
                     eligible = [e for e in EXERCISE_CATALOG if not e.get("required_equipment")]
-                plan = _generate_mock_plan(None, eligible, chat_history)
+                plan = _generate_mock_plan(None, eligible)
                 return {"text": clean_text, "plan_data": plan}
         
     return {"text": text}

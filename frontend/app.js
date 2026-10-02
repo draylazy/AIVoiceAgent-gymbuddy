@@ -185,18 +185,11 @@ function resetChatControls() {
     }
 }
 
-function addChatMessage(role, text, isLoad = false, mode = null) {
-    const targetMode = mode || (document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness');
+function addChatMessage(role, text, isLoad = false) {
     if (!isLoad) {
-        chatData[targetMode].push({ role, text });
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+        chatData[currentMode].push({ role, text });
     }
-    
-    // Only append to DOM if targetMode matches the currently active tab
-    const activeMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-    if (targetMode !== activeMode && !isLoad) {
-        return;
-    }
-
     const wrapper = document.createElement("div");
     wrapper.className = `chat-msg-wrapper wrapper-${role}`;
     
@@ -204,7 +197,8 @@ function addChatMessage(role, text, isLoad = false, mode = null) {
     avatar.className = `chat-avatar avatar-${role}`;
     
     if (role === 'coach') {
-        if (targetMode === 'nutrition') {
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
+        if (currentMode === 'nutrition') {
             avatar.innerHTML = `<img src="avatar-rhino.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         } else {
             avatar.innerHTML = `<img src="avatar-bull.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -227,7 +221,7 @@ function addChatMessage(role, text, isLoad = false, mode = null) {
 function loadChatHistory(mode) {
     chatHistory.innerHTML = '';
     chatData[mode].forEach(msg => {
-        addChatMessage(msg.role, msg.text, true, mode);
+        addChatMessage(msg.role, msg.text, true);
     });
 }
 
@@ -250,7 +244,6 @@ function loadVoices() {
 
 let currentAudio = null;
 let edgeTtsPulseInterval = null;
-let currentAudioMode = null;
 
 function stopAudioPlayback() {
     if (currentAudio) {
@@ -265,42 +258,22 @@ function stopAudioPlayback() {
     if (synthesis && synthesis.speaking) {
         synthesis.cancel();
     }
-    currentAudioMode = null;
 }
 
-function playAudio(text, audioUrl, mode = null) {
+function playAudio(text, audioUrl) {
     stopAudioPlayback();
-
-    const activeMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-    const targetMode = mode || activeMode;
-    if (targetMode !== activeMode) return;
-
-    currentAudioMode = targetMode;
 
     if (audioUrl) {
         const fullAudioUrl = audioUrl.startsWith('http') ? audioUrl : `${API_URL}${audioUrl}`;
         currentAudio = new Audio(fullAudioUrl);
 
         currentAudio.onplay = () => {
-            const currentActive = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-            if (currentAudioMode !== currentActive) {
-                stopAudioPlayback();
-                return;
-            }
             setAvatarState("speaking");
             coachStatus.textContent = "Speaking...";
             updateMicIcon("stop");
 
             // Rhythmic avatar lip-sync pulse while playing Edge TTS audio
             edgeTtsPulseInterval = setInterval(() => {
-                const nowActive = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-                if (currentAudioMode !== nowActive) {
-                    stopAudioPlayback();
-                    setAvatarState("idle");
-                    coachStatus.textContent = "Ready";
-                    updateMicIcon("mic");
-                    return;
-                }
                 if (window.bullAvatar && window.bullAvatar.wordPulse) {
                     window.bullAvatar.wordPulse();
                 }
@@ -316,32 +289,27 @@ function playAudio(text, audioUrl, mode = null) {
             coachStatus.textContent = "Ready";
             updateMicIcon("mic");
             currentAudio = null;
-            currentAudioMode = null;
         };
 
         currentAudio.onerror = (err) => {
             console.warn("Edge TTS audio playback failed, falling back to Web Speech API:", err);
             stopAudioPlayback();
-            speakText(text, targetMode);
+            speakText(text);
         };
 
         currentAudio.play().catch(err => {
             console.warn("Edge TTS playback blocked or error, falling back to Web Speech API:", err);
             stopAudioPlayback();
-            speakText(text, targetMode);
+            speakText(text);
         });
     } else {
-        speakText(text, targetMode);
+        speakText(text);
     }
 }
 
-function speakText(text, mode = null) {
+function speakText(text) {
     if (!synthesis) return;
     synthesis.cancel();
-
-    const activeMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-    const targetMode = mode || activeMode;
-    if (targetMode !== activeMode) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
@@ -349,23 +317,20 @@ function speakText(text, mode = null) {
         utterance.voice = preferredVoice;
     }
 
+    // STRICTLY use 1.0 on mobile. Modifying pitch or rate on iOS often forces 
+    // the browser to fall back to a laggy, low-quality software synthesizer.
     utterance.pitch = 1.0;
     utterance.rate = 1.0;
 
     utterance.onstart = () => {
-        const currentActive = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        if (targetMode !== currentActive) {
-            synthesis.cancel();
-            return;
-        }
         setAvatarState("speaking");
         coachStatus.textContent = "Speaking...";
         updateMicIcon("stop");
     };
 
+    // Trigger the avatar's word pulse precisely when each word is spoken!
     utterance.onboundary = (event) => {
-        const currentActive = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        if (targetMode === currentActive && event.name === 'word' && window.bullAvatar && window.bullAvatar.wordPulse) {
+        if (event.name === 'word' && window.bullAvatar && window.bullAvatar.wordPulse) {
             window.bullAvatar.wordPulse();
         }
     };
@@ -377,6 +342,8 @@ function speakText(text, mode = null) {
     };
 
     utterance.onerror = (event) => {
+        // If it was canceled by the user, or if iOS silently drops it, 
+        // just quietly reset to ready instead of showing an error.
         setAvatarState("idle");
         coachStatus.textContent = "Ready";
         updateMicIcon("mic");
@@ -424,57 +391,46 @@ btnSend.addEventListener("click", async () => {
     const text = chatInput.value.trim();
     if (!text) return;
 
-    const requestMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-    addChatMessage("user", text, false, requestMode);
+    addChatMessage("user", text);
     resetChatControls();
     setAvatarState("thinking");
     coachStatus.textContent = "Thinking...";
 
     try {
+        let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
         const response = await fetch(`${API_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 message: text,
-                session_id: sessions[requestMode],
-                mode: requestMode
+                session_id: sessions[currentMode],
+                mode: currentMode
             })
         });
 
         if (response.ok) {
             const data = await response.json();
             const coachText = data.response || "Here is your plan!";
-            addChatMessage("coach", coachText, false, requestMode);
+            addChatMessage("coach", coachText);
+            playAudio(coachText, data.audio_url);
 
-            const activeMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-
-            // If the AI generated a plan, update the plan store
+            // If the AI generated a plan, display it
             if (data.plan_data) {
-                planDataStore[requestMode] = data.plan_data;
-                if (activeMode === requestMode) {
-                    renderPlan(data.plan_data);
-                    setAvatarState("celebrate");
-                    setTimeout(() => setAvatarState("speaking"), 2500);
-                }
-            }
-
-            if (activeMode === requestMode) {
-                playAudio(coachText, data.audio_url, requestMode);
+                planDataStore[currentMode] = data.plan_data;
+                renderPlan(data.plan_data);
+                setAvatarState("celebrate");
+                // Wait for the jump animation before waving while speaking
+                setTimeout(() => setAvatarState("speaking"), 2500);
             }
         } else {
             throw new Error("API Error");
         }
     } catch (e) {
         console.error(e);
-        const activeMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
-        if (activeMode === requestMode) {
-            setAvatarState("error");
-            coachStatus.textContent = "Connection error";
-            addChatMessage("coach", "Sorry, I couldn't connect to the server.", false, requestMode);
-            setTimeout(() => setAvatarState("idle"), 3000);
-        } else {
-            addChatMessage("coach", "Sorry, I couldn't connect to the server.", false, requestMode);
-        }
+        setAvatarState("error");
+        coachStatus.textContent = "Connection error";
+        addChatMessage("coach", "Sorry, I couldn't connect to the server.");
+        setTimeout(() => setAvatarState("idle"), 3000);
     }
 });
 
@@ -781,9 +737,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const target = e.currentTarget.getAttribute('href');
             if (e.currentTarget.classList.contains('active')) return;
 
-            // Immediately stop any active audio and reset avatar speech/reaction state
-            stopAudioPlayback();
-
             document.querySelectorAll('.nav-bar a').forEach(a => a.classList.remove('active'));
             e.currentTarget.classList.add('active');
 
@@ -814,7 +767,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (floatieIcon) floatieIcon.innerHTML = `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>`;
 
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
-                setAvatarState('idle');
                 loadChatHistory('nutrition');
                 renderPlan(planDataStore.nutrition);
             } else {
@@ -835,7 +787,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (floatieIcon) floatieIcon.innerHTML = `<path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/>`;
 
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
-                setAvatarState('idle');
                 loadChatHistory('fitness');
                 renderPlan(planDataStore.fitness);
             }
