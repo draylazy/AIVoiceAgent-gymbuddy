@@ -890,13 +890,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeAllSheets);
 
     // Single Page App (SPA) logic to prevent WebGL/3D reload lag
-    document.querySelectorAll('.nav-bar a').forEach(link => {
+    document.querySelectorAll('.nav-bar a, .mobile-only-switch a').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const target = e.currentTarget.getAttribute('href');
             if (e.currentTarget.classList.contains('active')) return;
 
-            document.querySelectorAll('.nav-bar a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.nav-bar a, .mobile-only-switch a').forEach(a => a.classList.remove('active'));
             e.currentTarget.classList.add('active');
 
             const planTitle = document.getElementById('plan-title');
