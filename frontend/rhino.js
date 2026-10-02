@@ -77,6 +77,7 @@ export function createRhino(THREE, scene) {
     
     return {
         chef,
+        head,
         react: function(type, t) {
             action = type === 'reset' ? 'idle' : type;
             started = t;

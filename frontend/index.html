@@ -63,7 +63,7 @@
                            <svg id="floatie-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/></svg>
                         </div>
                         <div style="display: flex; flex-direction: column;">
-                           <span id="floatie-main-text" style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem; color: var(--text-primary);">Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+                           <span id="floatie-main-text" style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem; color: var(--text-primary);">Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg><span id="desktop-plan-notif" class="pulse-notif" style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span></span>
                            <span style="font-size: 0.65rem; color: var(--text-tertiary);">View your current plan</span>
                         </div>
                     </div>
@@ -85,8 +85,9 @@
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                         </button>
 
-                        <button class="mobile-action-btn" id="btn-open-plan" aria-label="Workout Plan">
+                        <button class="mobile-action-btn" id="btn-open-plan" aria-label="Workout Plan" style="position: relative;">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"></path><path d="M3 22h18"></path><path d="M14 22a7 7 0 1 0 0-14h-1"></path><path d="M9 14h2"></path><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path><path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path></svg>
+                            <span id="mobile-plan-notif" class="pulse-notif" style="display: none; position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; border: 2px solid var(--bg-card);"></span>
                         </button>
                     </div>
                     
