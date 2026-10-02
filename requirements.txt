@@ -3,7 +3,7 @@ uvicorn
 sqlalchemy
 pydantic
 pydantic-settings
-google-generativeai
+google-genai
 pytest
 httpx
 groq

@@ -73,6 +73,8 @@ if (SpeechRecognition) {
         coachStatus.textContent = "Listening...";
         btnMic.style.opacity = "1";
         chatInput.value = "";
+        btnSend.disabled = true;
+        chatInput.disabled = true;
     };
 
     recognition.onresult = (event) => {
@@ -107,6 +109,8 @@ if (SpeechRecognition) {
         btnMic.classList.remove("mic-active");
         setTimeout(() => setAvatarState("idle"), 2000);
         clearTimeout(silenceTimer);
+        btnSend.disabled = false;
+        chatInput.disabled = false;
         resetChatControls();
     };
 
@@ -114,6 +118,8 @@ if (SpeechRecognition) {
         isListening = false;
         btnMic.classList.remove("mic-active");
         clearTimeout(silenceTimer);
+        btnSend.disabled = false;
+        chatInput.disabled = false;
 
         if (chatInput.value.trim() !== "") {
             setAvatarState("idle");
@@ -386,7 +392,19 @@ chatInput.addEventListener('keypress', (e) => {
     }
 });
 
+let abortController = null;
+
 btnSend.addEventListener("click", async () => {
+    if (abortController) {
+        abortController.abort();
+        abortController = null;
+        setAvatarState("idle");
+        coachStatus.textContent = "Canceled";
+        setTimeout(() => { if (coachStatus.textContent === "Canceled") coachStatus.textContent = "Ready"; }, 2000);
+        btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        return;
+    }
+
     unlockSpeech();
     const text = chatInput.value.trim();
     if (!text) return;
@@ -395,6 +413,9 @@ btnSend.addEventListener("click", async () => {
     resetChatControls();
     setAvatarState("thinking");
     coachStatus.textContent = "Thinking...";
+    btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>`;
+
+    abortController = new AbortController();
 
     try {
         let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
@@ -405,8 +426,12 @@ btnSend.addEventListener("click", async () => {
                 message: text,
                 session_id: sessions[currentMode],
                 mode: currentMode
-            })
+            }),
+            signal: abortController.signal
         });
+
+        abortController = null;
+        btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
 
         if (response.ok) {
             const data = await response.json();
@@ -426,6 +451,14 @@ btnSend.addEventListener("click", async () => {
             throw new Error("API Error");
         }
     } catch (e) {
+        abortController = null;
+        btnSend.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+
+        if (e.name === 'AbortError') {
+            console.log('Request aborted by user');
+            return;
+        }
+
         console.error(e);
         setAvatarState("error");
         coachStatus.textContent = "Connection error";

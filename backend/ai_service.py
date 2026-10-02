@@ -51,16 +51,10 @@ except ImportError:
     GROQ_AVAILABLE = False
 
 try:
-    import google.generativeai as genai
+    from google import genai
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
-
-if GENAI_AVAILABLE and os.getenv("GEMINI_API_KEY"):
-    try:
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    except Exception:
-        pass
 
 def generate_workout_plan(user: Any, equipment: Any, eligible_exercises: List[Dict[str, Any]]) -> WorkoutPlanData:
     provider = get_ai_provider()
@@ -160,9 +154,9 @@ def search_online_fitness(query: str, max_results: int = 2) -> str:
         return ""
 
 GROQ_PRIMARY_MODELS = [
-    os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"),
-    "openai/gpt-oss-20b",
-    "openai/gpt-oss-120b",
+    os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
+    "qwen/qwen3.8-27b",
+    "allam-2-7b",
 ]
 
 def get_groq_model():
@@ -182,7 +176,9 @@ def _groq_call_with_fallback(client, messages, response_format=None, temperature
                 kwargs["response_format"] = response_format
             return client.chat.completions.create(**kwargs)
         except Exception as e:
-            print(f"Groq model {model} failed: {e}. Trying next...")
+            # Silently fallback for common expected errors (like rate limits or missing models)
+            if "rate_limit_exceeded" not in str(e) and "does not exist" not in str(e):
+                print(f"Groq model {model} failed: {e}. Trying next...")
     raise RuntimeError("All Groq models failed.")
 
 def _generate_groq_plan(user: Any, equipment: Any, eligible_exercises: List[Dict[str, Any]]) -> WorkoutPlanData:
@@ -248,14 +244,20 @@ def _generate_groq_plan(user: Any, equipment: Any, eligible_exercises: List[Dict
         data = data["plan"]
     return WorkoutPlanData(**data)
 
+class GeminiWrapper:
+    def __init__(self, model_name):
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY") or "mock")
+        self.model = model_name
+
+    def generate_content(self, prompt):
+        return self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
+
 def get_gemini_model():
     """Get the active Gemini model supported by current API."""
-    for model_name in ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-2.5-flash']:
-        try:
-            return genai.GenerativeModel(model_name)
-        except Exception:
-            continue
-    return genai.GenerativeModel('gemini-3.8-flash')
+    return GeminiWrapper('gemini-2.5-flash')
 
 def _generate_gemini_plan(user: Any, equipment: Any, eligible_exercises: List[Dict[str, Any]]) -> WorkoutPlanData:
     model = get_gemini_model()
@@ -472,13 +474,15 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], mo
         {online_findings if online_findings else "Utilize current exercise science and optimal hypertrophy/strength protocols."}
         
         CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
+        CRITICAL INSTRUCTION: If the user specified an experience level (beginner, intermediate, professional) in the chat history, you MUST strictly adjust the exercises, sets, reps, and explanations to match that level (e.g., fundamentals for beginners, advanced techniques for professionals).
         
         PLAN LENGTH RULES:
-        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of sessions in the array. For rest days, include a session with explanation "Rest Day" and empty exercise lists.
-        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
-        3. If the user asks for a general plan without specifying days (e.g., "give me a workout plan", "create a routine for me"), default to a 7-day plan.
-        4. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), generate ONLY a 1-day plan.
-        5. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+        1. If the user asks for a weekly schedule (e.g., "4 days workout with 3 rest days"), generate exactly a 7-day plan. CRITICAL: You MUST strictly count your generated sessions. Ensure the number of active workout days EXACTLY matches what the user requested (e.g., 4), and the number of "Rest Day" sessions EXACTLY matches what they requested (e.g., 3). Do not output extra workout days.
+        2. If the user asks for a specific number of days (e.g., "4-day plan") without mentioning rest days, generate EXACTLY that number of sessions in the array.
+        3. For rest days, include a session with explanation "Rest Day". If the user requested "active rest", include light mobility exercises; if "complete rest", leave the exercises array completely empty.
+        4. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), generate a maximum of a 7-day plan.
+        5. If the user asks for a general plan without specifying days, default to a 7-day plan.
+        6. For each session, the `explanation` field MUST describe the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
 
         Do NOT restrict yourself to any static list. Select the best, scientifically validated exercises from the web for the user's equipment and targets.
         
@@ -587,13 +591,15 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], 
         {online_findings if online_findings else "Utilize evidence-based fitness science."}
         
         CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
+        CRITICAL INSTRUCTION: If the user specified an experience level (beginner, intermediate, professional) in the chat history, you MUST strictly adjust the exercises, sets, reps, and explanations to match that level (e.g., fundamentals for beginners, advanced techniques for professionals).
         
         PLAN LENGTH RULES:
-        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of sessions in the array. For rest days, include a session with explanation "Rest Day" and empty exercise lists.
-        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
-        3. If the user asks for a general plan without specifying days (e.g., "give me a workout plan", "create a routine for me"), default to a 7-day plan.
-        4. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), generate ONLY a 1-day plan.
-        5. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+        1. If the user asks for a weekly schedule (e.g., "4 days workout with 3 rest days"), generate exactly a 7-day plan. CRITICAL: You MUST strictly count your generated sessions. Ensure the number of active workout days EXACTLY matches what the user requested (e.g., 4), and the number of "Rest Day" sessions EXACTLY matches what they requested (e.g., 3). Do not output extra workout days.
+        2. If the user asks for a specific number of days (e.g., "4-day plan") without mentioning rest days, generate EXACTLY that number of sessions in the array.
+        3. For rest days, include a session with explanation "Rest Day". If the user requested "active rest", include light mobility exercises; if "complete rest", leave the exercises array completely empty.
+        4. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), generate a maximum of a 7-day plan.
+        5. If the user asks for a general plan without specifying days, default to a 7-day plan.
+        6. For each session, the `explanation` field MUST describe the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
         
         Respond STRICTLY in valid JSON matching this schema:
         {{
@@ -701,6 +707,8 @@ Voice rules (replies will be read aloud via text-to-speech):
 - If a user mentions a specific exercise (e.g., bench press, squat), give a KEY form cue immediately.
 - If a user asks for a workout plan or routine, DO NOT list the exercises, sets, or reps in your spoken response. You MUST use the visual plan interface instead!
 - If a user asks for a workout plan exceeding 7 days, you MUST politely inform them that you can only generate a maximum of a 7-day plan, and then proceed to generate a 7-day plan for them.
+- If a user asks for a workout plan and hasn't told you their experience level, you MUST first ask if they are a beginner, intermediate, or professional. Do NOT output [GENERATE_PLAN] until they have answered this question.
+- If a user asks to include rest days in their plan, you MUST first ask them to clarify if they want "active rest" (no heavy lifting) or "complete rest" (doing nothing). Do NOT output [GENERATE_PLAN] until they have answered this question.
 
 CRITICAL SYSTEM INSTRUCTION regarding Workout Plans:
 You have a connected app interface that can display a workout plan visually to the user.
@@ -710,6 +718,7 @@ Whenever the user asks you to:
 3. Change their current workout plan
 4. Give them a new day (e.g. "give me a leg day", "give me an arm plan")
 5. Or any variation of asking for a list of exercises to do.
+6. When the user answers your clarification questions (e.g., about rest days or experience level).
 
 You MUST NOT speak the routine. Instead, you MUST, WITHOUT FAIL, append this exact string to the very end of your response:
 [GENERATE_PLAN]
@@ -771,7 +780,6 @@ def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness
     return {"text": text}
 
 def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitness") -> Dict[str, Any]:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     model = get_gemini_model()
     
     history_str = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history])
