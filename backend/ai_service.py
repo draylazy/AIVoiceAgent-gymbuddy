@@ -428,9 +428,11 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], mo
         CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different meals compared to what was discussed previously in the chat history. Provide a novel variation!
         
         PLAN LENGTH RULES:
-        1. If the user asks for a general meal plan (e.g., "give me a meal plan", "create a diet for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 days in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. Under no circumstances can you output more than 7 days.
-        2. If the user asks for a single day (e.g., "what should I eat today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 day in the array).
-        3. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
+        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of days in the array.
+        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
+        3. If the user asks for a general meal plan without specifying days (e.g., "give me a meal plan", "create a diet for me"), default to a 7-day plan.
+        4. If the user asks for a single day (e.g., "what should I eat today"), generate ONLY a 1-day plan.
+        5. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
         
         Respond STRICTLY in valid JSON matching this schema:
         {{
@@ -472,9 +474,11 @@ def _generate_groq_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], mo
         CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
         
         PLAN LENGTH RULES:
-        1. If the user asks for a general plan (e.g., "give me a workout plan", "create a routine for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 sessions in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. For rest days, include a session with explanation "Rest Day" and empty exercise lists. Under no circumstances can you output more than 7 days.
-        2. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 session in the array).
-        3. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of sessions in the array. For rest days, include a session with explanation "Rest Day" and empty exercise lists.
+        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
+        3. If the user asks for a general plan without specifying days (e.g., "give me a workout plan", "create a routine for me"), default to a 7-day plan.
+        4. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), generate ONLY a 1-day plan.
+        5. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
 
         Do NOT restrict yourself to any static list. Select the best, scientifically validated exercises from the web for the user's equipment and targets.
         
@@ -540,9 +544,11 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], 
         {online_findings if online_findings else "Utilize current nutritional science."}
         
         PLAN LENGTH RULES:
-        1. If the user asks for a general meal plan (e.g., "give me a meal plan", "create a diet for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 days in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. Under no circumstances can you output more than 7 days.
-        2. If the user asks for a single day (e.g., "what should I eat today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 day in the array).
-        3. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
+        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of days in the array.
+        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
+        3. If the user asks for a general meal plan without specifying days (e.g., "give me a meal plan", "create a diet for me"), default to a 7-day plan.
+        4. If the user asks for a single day (e.g., "what should I eat today"), generate ONLY a 1-day plan.
+        5. For each day, the `explanation` field MUST summarize the goal of that day (e.g., "High Protein", "Low Carb", "Cheat Day"). Do not leave it blank.
         
         Respond STRICTLY in valid JSON matching this schema:
         {{
@@ -583,9 +589,11 @@ def _generate_gemini_dynamic_plan_from_chat(chat_history: List[Dict[str, str]], 
         CRITICAL INSTRUCTION: If the user is asking for a "different", "new", or "changed" plan, you MUST select completely different exercises and/or structure compared to what was discussed previously in the chat history. Provide a novel variation!
         
         PLAN LENGTH RULES:
-        1. If the user asks for a general plan (e.g., "give me a workout plan", "create a routine for me", "7-day plan") OR a plan exceeding 7 days, you MUST generate a maximum of a 7-day plan (EXACTLY 7 sessions in the array). You must literally output `[ {{day:1...}}, {{day:2...}}, {{day:3...}}, {{day:4...}}, {{day:5...}}, {{day:6...}}, {{day:7...}} ]`. For rest days, include a session with explanation "Rest Day" and empty exercise lists. Under no circumstances can you output more than 7 days.
-        2. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), you MUST generate ONLY a 1-day plan (EXACTLY 1 session in the array).
-        3. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
+        1. If the user asks for a specific number of days (e.g., "4-day plan", "3 days"), you MUST generate EXACTLY that number of sessions in the array. For rest days, include a session with explanation "Rest Day" and empty exercise lists.
+        2. If the user asks for a plan exceeding 7 days (e.g., "30-day plan"), you MUST generate a maximum of a 7-day plan. Under no circumstances can you output more than 7 days.
+        3. If the user asks for a general plan without specifying days (e.g., "give me a workout plan", "create a routine for me"), default to a 7-day plan.
+        4. If the user asks for a specific muscle or a single day (e.g., "give me an arm workout", "what should I do today"), generate ONLY a 1-day plan.
+        5. For each session, the `explanation` field MUST be exactly the muscle target for that day (e.g., "Chest & Triceps", "Legs", or "Rest Day"). Do not leave it blank.
         
         Respond STRICTLY in valid JSON matching this schema:
         {{
