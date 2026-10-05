@@ -74,7 +74,7 @@
                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
                         </div>
                         <div style="display: flex; flex-direction: column;">
-                           <span style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem; color: var(--text-primary);">YOUR MEAL PLAN <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+                           <span id="floatie-main-text" style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem; color: var(--text-primary);">YOUR MEAL PLAN <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg><span id="desktop-plan-notif" class="pulse-notif" style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span></span>
                            <span style="font-size: 0.65rem; color: var(--text-tertiary);">View your current plan</span>
                         </div>
                     </div>
@@ -97,6 +97,7 @@
                         </button>
 
                         <button class="mobile-action-btn" id="btn-open-plan" aria-label="Meal Plan">
+                            <span id="mobile-plan-notif" class="pulse-notif" style="display: none; position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; border: 2px solid var(--bg-card);"></span>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"></path><path d="M3 22h18"></path><path d="M14 22a7 7 0 1 0 0-14h-1"></path><path d="M9 14h2"></path><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path><path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path></svg>
                         </button>
                     </div>

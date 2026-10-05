@@ -690,7 +690,8 @@ Whenever the user asks you to:
 2. Make a diet routine
 3. Change their current meal plan
 4. Give them a new day of meals
-5. Or any variation of asking for a list of what to eat.
+5. Update or modify an existing plan (e.g., changing the number of days, swapping foods, adjusting macros, changing budget).
+6. Or any variation of asking for a list of what to eat.
 
 You MUST NOT speak the meal plan. Instead, you MUST, WITHOUT FAIL, append this exact string to the very end of your response:
 [GENERATE_PLAN]
@@ -717,8 +718,9 @@ Whenever the user asks you to:
 2. Make a routine
 3. Change their current workout plan
 4. Give them a new day (e.g. "give me a leg day", "give me an arm plan")
-5. Or any variation of asking for a list of exercises to do.
-6. When the user answers your clarification questions (e.g., about rest days or experience level).
+5. Update or modify an existing plan (e.g., changing the number of days, swapping exercises, adjusting difficulty).
+6. Or any variation of asking for a list of exercises to do.
+7. When the user answers your clarification questions (e.g., about rest days or experience level).
 
 You MUST NOT speak the routine. Instead, you MUST, WITHOUT FAIL, append this exact string to the very end of your response:
 [GENERATE_PLAN]
@@ -748,6 +750,12 @@ def _generate_groq_chat(chat_history: List[Dict[str, str]], mode: str = "fitness
         if role not in ("user", "assistant"):
             continue
         messages.append({"role": role, "content": msg["content"]})
+        
+    # Final strict reminder to prevent the LLM from forgetting the tag
+    messages.append({
+        "role": "system",
+        "content": "CRITICAL REMINDER: If the user just asked you to create, modify, update, or change a plan, you MUST append the exact string [GENERATE_PLAN] at the very end of your response. Do not forget this!"
+    })
         
     completion = _groq_call_with_fallback(client, messages, temperature=0.75, max_tokens=300)
     text = completion.choices[0].message.content.strip()
@@ -797,6 +805,8 @@ def _generate_gemini_chat(chat_history: List[Dict[str, str]], mode: str = "fitne
     Respond directly to the last message, continuing the persona:
     
     {_get_voice_rules_for_mode(mode)}
+    
+    CRITICAL REMINDER: If the user just asked you to create, modify, update, or change a plan, you MUST append the exact string [GENERATE_PLAN] at the very end of your response. Do not forget this!
     """
     
     response = model.generate_content(prompt)
