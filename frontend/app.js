@@ -675,7 +675,7 @@ function renderPlan(planData) {
         planData.sessions.forEach((sess, idx) => {
             // Use explanation as the muscle target for the button
             const target = sess.explanation ? ` - ${sess.explanation}` : '';
-            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: nowrap; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${sess.day}${target}</button>`;
+            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: normal; text-align: left; line-height: 1.4; height: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${sess.day}${target}</button>`;
         });
         tabsHTML += `</div><div id="session-display-area"></div>`;
         planDisplay.innerHTML = tabsHTML;
@@ -778,7 +778,7 @@ function renderMealPlan(planData) {
         let tabsHTML = `<div class="plan-tabs" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.5rem;">`;
         planData.days.forEach((day, idx) => {
             const target = day.explanation ? ` - ${day.explanation}` : '';
-            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: nowrap; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${day.day}${target}</button>`;
+            tabsHTML += `<button class="plan-tab-btn" data-index="${idx}" style="white-space: normal; text-align: left; line-height: 1.4; height: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); border-radius: 20px; background: ${idx === 0 ? 'var(--accent-dark-green)' : 'transparent'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; cursor: pointer; font-weight: 600;">Day ${day.day}${target}</button>`;
         });
         tabsHTML += `</div><div id="meal-display-area"></div>`;
         planDisplay.innerHTML = tabsHTML;
@@ -922,7 +922,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (chatHeaderMain) chatHeaderMain.innerHTML = `What are we <span style="color: var(--accent-dark-green);">eating</span> today?`;
                 if (chatLiveIndicator) chatLiveIndicator.innerHTML = `<span class="dot"></span> Live chef`;
 
-                if (floatieMainText) floatieMainText.innerHTML = `Your Meal Plan <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+                if (floatieMainText) floatieMainText.innerHTML = `Your Meal Plan <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg><span id="desktop-plan-notif" class="pulse-notif" style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span>`;
                 if (floatieIcon) floatieIcon.innerHTML = `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>`;
 
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('nutrition');
@@ -942,7 +942,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (chatHeaderMain) chatHeaderMain.innerHTML = `What are we <span style="color: var(--accent-dark-green);">training</span> today?`;
                 if (chatLiveIndicator) chatLiveIndicator.innerHTML = `<span class="dot"></span> Live coach`;
 
-                if (floatieMainText) floatieMainText.innerHTML = `Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+                if (floatieMainText) floatieMainText.innerHTML = `Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg><span id="desktop-plan-notif" class="pulse-notif" style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span>`;
                 if (floatieIcon) floatieIcon.innerHTML = `<path d="m14.4 14.4-4.8-4.8"/><path d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z"/>`;
 
                 if (window.bullAvatar && window.bullAvatar.setMode) window.bullAvatar.setMode('fitness');
