@@ -139,8 +139,10 @@ try {
     }
     
     let talkPulse = 0;
-    function wordPulse() {
+    let talkingMode = null;
+    function wordPulse(mode) {
         talkPulse = 1.0;
+        talkingMode = mode;
     }
     
     let currentMode = 'fitness';
@@ -190,7 +192,7 @@ try {
         talkPulse = Math.max(0, talkPulse - 0.06);
 
         if (currentMode === 'nutrition') {
-            rhino.update(t, Math.min(clock.getDelta() || 0.016, 0.05), motion);
+            rhino.update(t, Math.min(clock.getDelta() || 0.016, 0.05), motion, talkPulse, talkingMode);
             // Even if rhino doesn't lip-sync, we sync head movement to mouse like the bull
             if (rhino.head) {
                 rhino.head.rotation.y += (lookX * motion - rhino.head.rotation.y) * .09;
@@ -260,7 +262,7 @@ try {
         if (action === 'jump') bull.position.y += Math.abs(Math.sin(elapsed * Math.PI * 2)) * envelope * .4 * motion;
         if (action === 'nod') head.rotation.x += Math.sin(elapsed * 10) * envelope * .04 * motion;
         
-        const isSpeaking = (action === 'talk' && talkPulse > 0.02);
+        const isSpeaking = (action === 'talk' && talkPulse > 0.02 && talkingMode === 'fitness');
         mouthOpening.visible = isSpeaking;
         teeth.visible = isSpeaking;
         mouthInner.visible = isSpeaking;

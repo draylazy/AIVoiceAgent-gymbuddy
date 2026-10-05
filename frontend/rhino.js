@@ -28,7 +28,10 @@ export function createRhino(THREE, scene) {
      ell(head,black,[s*.3,-.22,.709],[.065,.045,.024]);
     }
     const horn=mesh(head,new THREE.ConeGeometry(.16,.58,36),ivory,[0,.05,.68]);horn.rotation.x=.14;
-    ell(head,black,[0,-.43,.739],[.25,.07,.022]);ell(head,eyeWhite,[0,-.408,.758],[.17,.017,.012]);ell(head,pink,[0,-.469,.754],[.105,.015,.012]);
+    const mouthOpening=ell(head,black,[0,-.43,.739],[.25,.07,.022]);
+    const teeth=ell(head,eyeWhite,[0,-.408,.758],[.17,.017,.012]);
+    const mouthInner=ell(head,pink,[0,-.469,.754],[.105,.015,.012]);
+    const mouthOpeningScaleY = mouthOpening.scale.y;
     cylinder(head,jacket,[0,.65,0],.48,.3);
     for(let i=0;i<7;i++){const a=i/7*Math.PI*2;ell(head,jacket,[Math.cos(a)*.29,.94,Math.sin(a)*.25],[.31,.33,.29]);}
     ell(head,jacket,[0,1.02,0],[.35,.29,.33]);
@@ -86,7 +89,7 @@ export function createRhino(THREE, scene) {
             bulb.visible=action==='think';
             confetti.visible=action==='celebrate';
         },
-        update: function(t, dt, motion) {
+        update: function(t, dt, motion, talkPulse = 0, talkingMode = null) {
             const e=t-started;
             const duration=action==='cook'||action==='slice'?8:action==='think'?4.5:3.5;
             if(action!=='idle'&&e>duration){ action='idle'; pan.visible=spoon.visible=station.visible=knife.visible=bulb.visible=confetti.visible=false; }
@@ -113,6 +116,20 @@ export function createRhino(THREE, scene) {
             }
             const blend=1-Math.exp(-dt*15);
             for(const [i,target] of [left,right].entries()){arms[i].target.lerp(target,blend);poseArm(arms[i],arms[i].target);}
+            
+            const isSpeaking = ((action === 'talk' && talkPulse > 0.02) || talkPulse > 0.02) && talkingMode === 'nutrition';
+            mouthOpening.visible = isSpeaking;
+            teeth.visible = isSpeaking;
+            mouthInner.visible = isSpeaking;
+
+            if (isSpeaking) {
+                mouthOpening.scale.y = mouthOpeningScaleY * (1 + talkPulse * 0.2);
+                mouthInner.position.y = -.469 - (talkPulse * 0.005);
+                teeth.position.y = -.408;
+            } else {
+                mouthOpening.scale.y = mouthOpeningScaleY;
+                mouthInner.position.y = -.469;
+            }
         }
     };
 }

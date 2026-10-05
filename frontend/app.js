@@ -349,7 +349,7 @@ function stopAudioPlayback() {
     }
 }
 
-function playAudio(text, audioUrl) {
+function playAudio(text, audioUrl, mode) {
     stopAudioPlayback();
 
     if (audioUrl) {
@@ -364,7 +364,7 @@ function playAudio(text, audioUrl) {
             // Rhythmic avatar lip-sync pulse while playing Edge TTS audio
             edgeTtsPulseInterval = setInterval(() => {
                 if (window.bullAvatar && window.bullAvatar.wordPulse) {
-                    window.bullAvatar.wordPulse();
+                    window.bullAvatar.wordPulse(mode);
                 }
             }, 180);
         };
@@ -383,20 +383,20 @@ function playAudio(text, audioUrl) {
         currentAudio.onerror = (err) => {
             console.warn("Edge TTS audio playback failed, falling back to Web Speech API:", err);
             stopAudioPlayback();
-            speakText(text);
+            speakText(text, mode);
         };
 
         currentAudio.play().catch(err => {
             console.warn("Edge TTS playback blocked or error, falling back to Web Speech API:", err);
             stopAudioPlayback();
-            speakText(text);
+            speakText(text, mode);
         });
     } else {
-        speakText(text);
+        speakText(text, mode);
     }
 }
 
-function speakText(text) {
+function speakText(text, mode) {
     if (!synthesis) return;
     synthesis.cancel();
 
@@ -420,7 +420,7 @@ function speakText(text) {
     // Trigger the avatar's word pulse precisely when each word is spoken!
     utterance.onboundary = (event) => {
         if (event.name === 'word' && window.bullAvatar && window.bullAvatar.wordPulse) {
-            window.bullAvatar.wordPulse();
+            window.bullAvatar.wordPulse(mode);
         }
     };
 
@@ -533,7 +533,7 @@ btnSend.addEventListener("click", async () => {
             
             let currentActiveMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
             if (currentMode === currentActiveMode) {
-                playAudio(coachText, data.audio_url);
+                playAudio(coachText, data.audio_url, currentMode);
             } else {
                 setAvatarState("idle");
                 coachStatus.textContent = "Ready";
