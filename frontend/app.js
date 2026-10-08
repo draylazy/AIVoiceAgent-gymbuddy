@@ -239,6 +239,12 @@ function addChatMessage(role, text, isLoad = false, modeOverride = null) {
 
     if (!isLoad) {
         chatData[targetMode].push({ role, text });
+        if (role === "user") {
+            const introEl = document.querySelector('.intro-blur');
+            if (introEl) introEl.classList.add('is-blurred');
+            const twEl = document.querySelector('.typewriter');
+            if (twEl) twEl.classList.add('is-blurred');
+        }
     }
 
     // Only append to DOM if the target mode matches the currently active mode
@@ -311,6 +317,13 @@ function loadChatHistory(mode) {
     chatData[mode].forEach(msg => {
         addChatMessage(msg.role, msg.text, true, mode);
     });
+    
+    // Blur intro text if user has interacted in this mode
+    const hasInteracted = chatData[mode].length > 2;
+    const introEl = document.querySelector('.intro-blur');
+    if (introEl) introEl.classList.toggle('is-blurred', hasInteracted);
+    const twEl = document.querySelector('.typewriter');
+    if (twEl) twEl.classList.toggle('is-blurred', hasInteracted);
 }
 
 // Voice Selection logic
