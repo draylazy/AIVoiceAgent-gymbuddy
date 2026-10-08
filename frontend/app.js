@@ -1,6 +1,5 @@
-// Use relative path for production, localhost for local development if needed
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? (window.location.port ? window.location.origin : 'http://localhost:8000')
+    ? 'http://localhost:8000'
     : window.location.origin;
 let sessions = {
     fitness: "fit_" + Math.floor(Math.random() * 10000),
@@ -331,14 +330,44 @@ function loadVoices() {
         voices[0];
 }
 
-let currentAudio = null;
+let currentAudio = document.createElement('audio');
+currentAudio.crossOrigin = "anonymous";
+document.body.appendChild(currentAudio);
+
+let audioContext = null;
+let audioAnalyzer = null;
+let lipSyncInterval = null;
 let edgeTtsPulseInterval = null;
+
+function initAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioAnalyzer = audioContext.createAnalyser();
+        audioAnalyzer.fftSize = 256;
+        const source = audioContext.createMediaElementSource(currentAudio);
+        source.connect(audioAnalyzer);
+        audioAnalyzer.connect(audioContext.destination);
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
 
 function stopAudioPlayback() {
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;
-        currentAudio = null;
+    }
+    if (lipSyncInterval) {
+        clearInterval(lipSyncInterval);
+        lipSyncInterval = null;
+        
+        // Reset avatar transform
+        const avatarImg = document.querySelector('.avatar-character');
+        if (avatarImg) {
+            avatarImg.style.transform = '';
+            avatarImg.style.transition = 'transform 0.3s ease-out';
+        }
     }
     if (edgeTtsPulseInterval) {
         clearInterval(edgeTtsPulseInterval);
@@ -354,14 +383,12 @@ function playAudio(text, audioUrl, mode) {
 
     if (audioUrl) {
         const fullAudioUrl = audioUrl.startsWith('http') ? audioUrl : `${API_URL}${audioUrl}`;
-        currentAudio = new Audio(fullAudioUrl);
+        currentAudio.src = fullAudioUrl;
 
         currentAudio.onplay = () => {
             setAvatarState("speaking");
             coachStatus.textContent = "Speaking...";
-            updateMicIcon("stop");
-
-            // Rhythmic avatar lip-sync pulse while playing Edge TTS audio
+            updateMicIcon("stop");// Rhythmic avatar lip-sync pulse while playing Edge TTS audio (fallback/legacy)
             edgeTtsPulseInterval = setInterval(() => {
                 if (window.bullAvatar && window.bullAvatar.wordPulse) {
                     window.bullAvatar.wordPulse(mode);
@@ -370,14 +397,10 @@ function playAudio(text, audioUrl, mode) {
         };
 
         currentAudio.onended = () => {
-            if (edgeTtsPulseInterval) {
-                clearInterval(edgeTtsPulseInterval);
-                edgeTtsPulseInterval = null;
-            }
+            stopAudioPlayback();
             setAvatarState("idle");
             coachStatus.textContent = "Ready";
             updateMicIcon("mic");
-            currentAudio = null;
         };
 
         currentAudio.onerror = (err) => {
@@ -808,24 +831,33 @@ function renderMealPlan(planData) {
 // Initial greeting and Theme Setup
 window.addEventListener('DOMContentLoaded', () => {
     const isMealBuddy = document.body.classList.contains("mealbuddy-page");
+    if (isMealBuddy) {
+        const navNut = document.getElementById('nav-nutrition');
+        if (navNut) navNut.classList.add('active');
+        const navWork = document.getElementById('nav-workout');
+        if (navWork) navWork.classList.remove('active');
+        
+        // Initialize text headers
+        const planTitle = document.getElementById('plan-title');
+        const planIndicatorText = document.getElementById('plan-indicator-text');
+        const chatHeaderSub = document.getElementById('chat-header-sub');
+        const chatHeaderMain = document.getElementById('chat-header-main');
+        const chatLiveIndicator = document.getElementById('chat-live-indicator');
+        const floatieMainText = document.getElementById('floatie-main-text');
+        const floatieIcon = document.getElementById('floatie-icon');
+        
+        if (planTitle) planTitle.textContent = "Your meal plan";
+        if (planIndicatorText) planIndicatorText.textContent = "Calorie-Aware";
+        if (chatHeaderSub) chatHeaderSub.textContent = "Let's build your meal plan";
+        if (chatHeaderMain) chatHeaderMain.innerHTML = `What are we <span style="color: var(--accent-dark-green);">eating</span> today?`;
+        if (chatLiveIndicator) chatLiveIndicator.innerHTML = `<span class="dot"></span> Live chef`;
+        if (floatieMainText) floatieMainText.innerHTML = `Your Meal Plan <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg><span id="desktop-plan-notif" class="pulse-notif" style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span>`;
+        if (floatieIcon) floatieIcon.innerHTML = `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>`;
+    }
     loadChatHistory(isMealBuddy ? 'nutrition' : 'fitness');
     // Don't auto-speak on load to prevent browser autoplay blocking, wait for user interaction
 
-    // Theme Toggle
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
-            // Optional: Save preference to localStorage
-            const isDark = document.body.classList.contains('dark-theme');
-            localStorage.setItem('fitbuddy-theme', isDark ? 'dark' : 'light');
-        });
 
-        // Check saved preference on load (defaults to light mode)
-        if (localStorage.getItem('fitbuddy-theme') === 'dark') {
-            document.body.classList.add('dark-theme');
-        }
-    }
 
     // --- Mobile Bottom Sheets Logic ---
     const btnOpenChat = document.getElementById('btn-open-chat');
@@ -908,8 +940,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const floatieMainText = document.getElementById('floatie-main-text');
             const floatieIcon = document.getElementById('floatie-icon');
 
-            if (target === 'mealbuddy.html') {
+            if (target === '#nutrition' || target.includes('nutrition')) {
                 document.body.classList.add('mealbuddy-page');
+                document.title = "MealBuddy: AI Nutrition Coach";
                 const logoImg = document.querySelector('.logo img');
                 if (logoImg) {
                     logoImg.src = "mealbuddy-logo.png";
@@ -930,6 +963,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 renderPlan(planDataStore.nutrition);
             } else {
                 document.body.classList.remove('mealbuddy-page');
+                document.title = "FitBuddy: AI Voice Fitness Coach";
                 const logoImg = document.querySelector('.logo img');
                 if (logoImg) {
                     logoImg.src = "fitbuddy-logo.png";
@@ -991,3 +1025,5 @@ function showToast(message, type = "error") {
         }, 400); // Wait for transition
     }, 4000);
 }
+
+

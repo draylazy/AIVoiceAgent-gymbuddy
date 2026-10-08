@@ -15,7 +15,7 @@ from .database import engine, get_db
 # Create DB tables
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="FitBuddy API")
+app = FastAPI(title="bAI buddy API")
 
 # Configure CORS (for development)
 app.add_middleware(

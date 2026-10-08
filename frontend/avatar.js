@@ -145,7 +145,7 @@ try {
         talkingMode = mode;
     }
     
-    let currentMode = 'fitness';
+    let currentMode = document.body.classList.contains('mealbuddy-page') ? 'nutrition' : 'fitness';
     const rhino = createRhino(THREE, scene);
 
     function setMode(mode) {
@@ -158,6 +158,9 @@ try {
             rhino.chef.visible = false;
         }
     }
+    
+    // Apply initial visibility based on page class
+    setMode(currentMode);
     
     // Give rhino a chance to randomly do something when idle
     setInterval(() => {
@@ -181,8 +184,23 @@ try {
         renderer.setSize(w, h); 
         camera.aspect = w / h; 
         const halfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-        camera.position.z = Math.max(2.4 / halfFov, 2.06 / (camera.aspect * halfFov)) + .55;
-        camera.lookAt(0, 2.13, 0); 
+        
+        // Zoom more by reducing the distance required to fit the model
+        camera.position.z = Math.max(1.9 / halfFov, 1.5 / (camera.aspect * halfFov)) + 0.3;
+        
+        // Shift camera left on desktop so the model appears in the right box
+        let shiftX = 0;
+        let lookX = 0;
+        if (w > 768) {
+            shiftX = -1.4; // Shift camera left
+            lookX = -1.4;  // Look straight ahead from the shifted position
+        }
+        camera.position.x = shiftX;
+        
+        // Move camera up (to push the character down in the frame)
+        camera.position.y = 2.95; 
+        camera.lookAt(lookX, 2.53, 0); 
+        
         camera.updateProjectionMatrix(); 
     }); 
     observer.observe(stage);
