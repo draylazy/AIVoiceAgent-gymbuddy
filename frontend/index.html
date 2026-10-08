@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>bAI buddy: AI Voice Fitness &amp; Nutrition Coach</title>
+    <title>bAI buddies: AI Voice Fitness &amp; Nutrition Coach</title>
     <meta name="description"
-        content="bAI buddy is an equipment-aware AI voice fitness coach, and MealBuddy is its nutrition chef. Talk or type to build workout and meal plans tailored to your gear, space and goals.">
+        content="bAI buddies is an equipment-aware AI voice fitness coach, and MealBuddy is its nutrition chef. Talk or type to build workout and meal plans tailored to your gear, space and goals.">
     <meta name="theme-color" content="#1c2014">
     <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -922,26 +922,37 @@
             visibility: hidden;
         }
 
-        .preloader-count {
+        .preloader-logo {
+            position: relative;
+            width: 96px;
+            height: 96px;
+        }
+
+        .preloader-icon {
+            width: 100%;
+            height: 100%;
+        }
+
+        .preloader-icon.bg {
+            color: rgba(255, 255, 255, 0.15);
+        }
+
+        .preloader-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: var(--load-pct, 0%);
+            height: 100%;
+            overflow: hidden;
             color: #fff;
-            display: flex;
-            align-items: flex-end;
-            gap: 4px;
-            line-height: 1;
         }
 
-        .preloader-count>span:first-child {
-            font-size: 80px;
-            font-weight: 300;
+        .preloader-icon.fg {
+            width: 96px;
+            height: 96px;
         }
 
-        .preloader-count .percent {
-            font-size: 28px;
-            padding-bottom: 8px;
-            color: var(--l-khaki);
-        }
-
-        .preloader-count.is-leaving {
+        .preloader-logo.is-leaving {
             animation: preload-count-out 0.75s cubic-bezier(.22, 1, .36, 1) both;
         }
 
@@ -1054,14 +1065,42 @@
     </div>
 
     <div class="preloader" id="preloader" aria-label="Loading">
-        <div class="preloader-count" id="preloader-count">
-            <span id="preloader-value">0</span><span class="percent">%</span>
+        <div class="preloader-logo" id="preloader-logo">
+            <svg class="preloader-icon bg" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <mask id="bai-mask">
+                        <path fill="white" d="M50,10 C22,10 0,28 0,50 C0,63 7,74 18,81 L14,94 C13.5,95.5 15,97 16.5,96 L32,87 C38,89 44,90 50,90 C78,90 100,72 100,50 C100,28 78,10 50,10 Z" />
+                        <g fill="black">
+                            <rect x="12" y="42" width="5" height="16" rx="2.5" />
+                            <rect x="22" y="36" width="5" height="28" rx="2.5" />
+                            <rect x="36" y="36" width="5" height="28" rx="2.5" />
+                            <rect x="26" y="48" width="11" height="4" />
+                            <circle cx="31.5" cy="42" r="2.5" />
+                            <circle cx="31.5" cy="58" r="2.5" />
+                            <rect x="49" y="28" width="4" height="45" rx="2" />
+                            <path d="M53,28 C57,28 58,36 58,40 C58,44 56,47 53,47 Z" />
+                            <rect x="63" y="35" width="3" height="12" rx="1.5" />
+                            <rect x="69" y="35" width="3" height="12" rx="1.5" />
+                            <rect x="75" y="35" width="3" height="12" rx="1.5" />
+                            <path d="M63,44 L63,46 C63,51 66.5,54 70.5,54 C74.5,54 78,51 78,46 L78,44 Z" />
+                            <rect x="69" y="50" width="3" height="23" rx="1.5" />
+                            <rect x="83" y="42" width="5" height="16" rx="2.5" />
+                        </g>
+                    </mask>
+                </defs>
+                <rect x="0" y="0" width="100" height="100" mask="url(#bai-mask)" />
+            </svg>
+            <div class="preloader-fill">
+                <svg class="preloader-icon fg" viewBox="0 0 100 100" fill="currentColor">
+                    <rect x="0" y="0" width="100" height="100" mask="url(#bai-mask)" />
+                </svg>
+            </div>
         </div>
     </div>
 
     <header class="l-nav" id="l-nav">
         <a href="#top" class="l-brand" id="nav-brand">
-            bAI buddy&reg;
+            bAI buddies&reg;
             <img src="icon-32.png" width="22" height="22" alt="" aria-hidden="true" style="border-radius: 4px;">
         </a>
         <nav class="l-links" aria-label="Sections">
@@ -1080,7 +1119,7 @@
             <div class="container hero-inner">
                 <div class="eyebrow stagger">Equipment-aware AI voice coach</div>
                 <h1 class="hero-title stagger" id="hero-title">Train smarter.<br><em>Just talk.</em></h1>
-                <p class="hero-sub stagger">Tell bAI buddy what gear you've got and what you're chasing. Get a workout
+                <p class="hero-sub stagger">Tell bAI buddies what gear you've got and what you're chasing. Get a workout
                     and meal plan built for your space, out loud, in seconds.</p>
                 <div class="hero-ctas stagger">
                     <a href="app.html" class="btn btn-primary" id="hero-cta">
@@ -1199,7 +1238,7 @@
                     <div class="eyebrow reveal">Live coaching</div>
                     <h2 class="section-title reveal reveal-d1" id="demo-title">Feels like texting a coach who never
                         sleeps.</h2>
-                    <p class="section-lead reveal reveal-d2">Ask follow-ups, push back, change your mind. bAI buddy
+                    <p class="section-lead reveal reveal-d2">Ask follow-ups, push back, change your mind. bAI buddies
                         remembers the conversation and updates your plan on the fly.</p>
                 </div>
                 <div class="demo-window reveal reveal-d1" id="demo-window">
@@ -1307,7 +1346,7 @@
                 <div class="faq reveal reveal-d2">
                     <details>
                         <summary>Do I need any equipment?</summary>
-                        <p>Nope. Tell bAI buddy you have nothing and it'll build a bodyweight plan. Add gear anytime and
+                        <p>Nope. Tell bAI buddies you have nothing and it'll build a bodyweight plan. Add gear anytime and
                             the plan adapts.</p>
                     </details>
                     <details>
@@ -1322,7 +1361,7 @@
                     </details>
                     <details>
                         <summary>Is this medical advice?</summary>
-                        <p>No. bAI buddy is a general fitness and nutrition assistant. Check with a professional before
+                        <p>No. bAI buddies is a general fitness and nutrition assistant. Check with a professional before
                             starting a new program, especially if you have an injury or health condition.</p>
                     </details>
                 </div>
@@ -1336,7 +1375,7 @@
                 <h2 class="section-title" id="final-title">Your next workout is one sentence away.</h2>
                 <p class="section-lead">No sign-up forms, no 40-question quiz. Just say what you've got.</p>
                 <a href="app.html" class="btn btn-primary" id="final-cta">
-                    Start talking to bAI buddy
+                    Start talking to bAI buddies
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12" />
@@ -1348,7 +1387,7 @@
     </main>
 
     <footer class="container l-footer">
-        <span>&copy; 2026 bAI buddy. Built with AI, powered by effort.</span>
+        <span>&copy; 2026 bAI buddies. Built with AI, powered by effort.</span>
         <nav aria-label="Footer">
             <a href="app.html" id="footer-fit">FitBuddy</a>
             <a href="app.html?mode=nutrition" id="footer-meal">MealBuddy</a>
@@ -1414,16 +1453,17 @@
         }
 
         // Preloader
-        const preloaderVal = document.getElementById('preloader-value');
-        const preloaderCount = document.getElementById('preloader-count');
+        const preloaderLogo = document.getElementById('preloader-logo');
         const preloader = document.getElementById('preloader');
         const duration = 1800;
         const startTime = performance.now();
         function updatePreloader(time) {
             const p = Math.min(1, (time - startTime) / duration);
-            preloaderVal.textContent = Math.round((1 - Math.pow(1 - p, 3)) * 100);
+            // Ease out cubic
+            const ease = 1 - Math.pow(1 - p, 3);
+            preloaderLogo.style.setProperty('--load-pct', (ease * 100) + '%');
             if (p < 1) return requestAnimationFrame(updatePreloader);
-            preloaderCount.classList.add('is-leaving');
+            preloaderLogo.classList.add('is-leaving');
             setTimeout(() => {
                 preloader.classList.add('is-background');
                 document.body.classList.add('preload-complete');
