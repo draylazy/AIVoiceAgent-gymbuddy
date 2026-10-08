@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FitBuddy: AI Voice Fitness Coach</title>
+    <meta name="description"
+        content="FitBuddy is an equipment-aware AI voice fitness coach. Talk or type to build workout and meal plans tailored to your gear, space and goals.">
+    <meta name="theme-color" content="#8e1022">
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preload" as="image" href="hero-bull.jpg">
+    <link rel="stylesheet"
+        href="https://db.onlinewebfonts.com/c/5ac3fe7c6abd2f62067f266d89671492?family=HelveticaNowDisplay-Medium">
+    <link rel="stylesheet"
+        href="https://db.onlinewebfonts.com/c/1aa3377e489837a26d019bba501e779d?family=HelveticaNowDisplayW01-Rg">
+    <link rel="stylesheet" href="style.css?v=30">
+</head>
+
+<body>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('mode') === 'nutrition') {
+            document.body.classList.add('mealbuddy-page');
+            document.title = "MealBuddy: AI Nutrition Coach";
+        }
+    </script>
+
+
+    <!-- ============ NAVBAR ============ -->
+    <header class="site-nav">
+        <a class="brand" href="index.html" id="brand-home" aria-label="FitBuddy home">
+            <span class="brand-name"><span class="only-fit">FitBuddy</span><span
+                    class="only-meal">MealBuddy</span>&reg;</span>
+            <span class="only-fit" aria-hidden="true" style="margin-left:6px; display:inline-flex; align-items:center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="5" width="4" height="14" rx="1" /><rect x="6" y="7" width="2" height="10" /><rect x="18" y="5" width="4" height="14" rx="1" /><rect x="16" y="7" width="2" height="10" /><rect x="8" y="10" width="8" height="4" /></svg>
+            </span>
+            <span class="only-meal" aria-hidden="true" style="margin-left:6px; display:inline-flex; align-items:center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+            </span>
+        </a>
+
+        <nav class="nav-bar" aria-label="Coach mode">
+            <a href="#" class="active" id="nav-workout">Workout</a><span class="nav-sep">, </span><a
+                href="#nutrition" id="nav-nutrition">Nutrition</a>
+        </nav>
+
+        <div class="nav-right">
+            <button type="button" id="desktop-btn-open-plan" class="nav-cta">
+                <span id="floatie-icon-container" class="floatie-icon-container" aria-hidden="true">
+                    <svg id="floatie-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m14.4 14.4-4.8-4.8" />
+                        <path
+                            d="M18.65 21.35a2.12 2.12 0 0 1-3-.01L2.66 8.35a2.12 2.12 0 0 1-.01-3l.86-.86a2.12 2.12 0 0 1 3 .01l12.99 12.99a2.12 2.12 0 0 1 .01 3z" />
+                    </svg>
+                </span>
+                <span id="floatie-main-text">Your Workout <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg><span id="desktop-plan-notif" class="pulse-notif"
+                        style="display: none; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; margin-left: 2px;"></span></span>
+            </button>
+
+
+
+            <button type="button" class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"
+                aria-controls="mobile-menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile overlay menu (reuses .mobile-only-switch so app.js SPA switching keeps working) -->
+    <div class="mobile-only-switch mobile-menu" id="mobile-menu">
+        <a href="app.html" class="active" id="mobile-nav-workout">Workout</a>
+        <a href="mealbuddy.html" id="mobile-nav-nutrition">Nutrition</a>
+        <button type="button" class="mobile-menu-cta" id="mobile-menu-plan">View your plan</button>
+    </div>
+
+    <main class="container">
+        <!-- Backdrop for sheets / drawer -->
+        <div class="sheet-backdrop" id="sheet-backdrop"></div>
+
+        <div class="dashboard-grid">
+            <!-- ============ HERO INTRO ============ -->
+            <section class="hero-intro" aria-labelledby="hero-title">
+                <h1 class="sr-only" id="hero-title">FitBuddy – AI voice fitness and nutrition coach</h1>
+
+                <p class="intro-blur" aria-hidden="true">
+                    <span class="only-fit">Hey there, meet FitBuddy,<br>your Equipment-Aware AI Voice Coach</span>
+                    <span class="only-meal">Hey there, meet MealBuddy,<br>your Calorie-Aware AI Nutrition Chef</span>
+                </p>
+
+                <p class="typewriter" id="typewriter"><span id="typewriter-text"></span><span class="tw-cursor"
+                        aria-hidden="true"></span></p>
+
+                <div class="pill-row" id="pill-row">
+                    <div class="pill-group only-fit">
+                        <button type="button" class="pill" id="pill-fit-1"
+                            data-prompt="Build me a full-body home workout">Build me a home workout</button>
+                        <button type="button" class="pill" id="pill-fit-2"
+                            data-prompt="I only have dumbbells and a mat. What can I do?">I only have dumbbells</button>
+                        <button type="button" class="pill" id="pill-fit-3"
+                            data-prompt="Make my current plan harder">Make it harder</button>
+                        <button type="button" class="pill" id="pill-fit-4"
+                            data-prompt="Plan a 3-day split for building muscle">Plan a 3-day split</button>
+                    </div>
+                    <div class="pill-group only-meal">
+                        <button type="button" class="pill" id="pill-meal-1"
+                            data-prompt="Plan a high-protein day of eating">Plan a high-protein day</button>
+                        <button type="button" class="pill" id="pill-meal-2"
+                            data-prompt="Give me a quick vegetarian dinner idea">Quick vegetarian dinner</button>
+                        <button type="button" class="pill" id="pill-meal-3"
+                            data-prompt="Help me adjust my macros for fat loss">Adjust my macros</button>
+                        <button type="button" class="pill" id="pill-meal-4"
+                            data-prompt="Create a meal prep plan for the week">Meal prep for the week</button>
+                    </div>
+                    <button type="button" class="pill pill-outline" id="pill-talk">
+                        <span>Prefer talking? <u>Tap to speak</u></span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ============ CHAT ============ -->
+            <section class="card chat-card" id="chat-sheet" aria-label="Conversation">
+                <button class="sheet-close-btn" id="btn-close-chat" aria-label="Close Chat">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="chat-head">
+                    <span class="chat-head-label">Conversation</span>
+                    <span id="chat-live-indicator" class="live-indicator"><span class="dot"></span> Live coach</span>
+                </div>
+                <div id="chat-history" class="chat-history"></div>
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+                    <button id="btn-send" class="send-btn" aria-label="Send message">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ============ COACH (felt character + voice controls) ============ -->
+            <section class="coach-container" aria-label="Voice coach">
+                <div class="coach-area" id="coach-area">
+                    <!-- 3D avatar engine restored to visual position -->
+                    <div id="stage" class="hero-stage avatar-stage" title="Poke me!"></div>
+
+                    <div class="ready-indicator" id="coach-status">Ready when you are</div>
+
+                    <div class="mobile-action-bar" id="mobile-action-bar">
+                        <button class="mobile-action-btn" id="btn-open-chat" aria-label="Chat">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </button>
+
+                        <button id="btn-mic" class="push-to-talk round-mic" aria-label="Microphone">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+
+                        <button class="mobile-action-btn" id="btn-open-plan" aria-label="Workout Plan"
+                            style="position: relative;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 18h8"></path>
+                                <path d="M3 22h18"></path>
+                                <path d="M14 22a7 7 0 1 0 0-14h-1"></path>
+                                <path d="M9 14h2"></path>
+                                <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"></path>
+                                <path d="M12 6V3a1 1 0 0 0-1-1 1 1 0 0 0-1 1v3"></path>
+                            </svg>
+                            <span id="mobile-plan-notif" class="pulse-notif"
+                                style="display: none; position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; border: 2px solid var(--bg-card);"></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ PLAN DRAWER ============ -->
+            <section class="card plan-card" id="plan-sheet" aria-label="Your plan">
+                <button class="sheet-close-btn" id="btn-close-plan" aria-label="Close Plan">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="card-header">
+                    <h2 id="plan-title">Your Workout</h2>
+                    <span class="live-indicator"><span class="dot"></span> <span
+                            id="plan-indicator-text">Equipment-Aware</span></span>
+                </div>
+
+                <div id="plan-display" class="plan-display-container">
+                    <p class="plan-empty">
+                        Tell me your goals and what equipment you have, and I'll create a plan for you!
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="avatar.js?v=22"></script>
+    <script src="app.js?v=7"></script>
+    <script src="ui.js?v=1"></script>
+</body>
+
+</html>
